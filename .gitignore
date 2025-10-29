@@ -1,9 +1,0 @@
-# Bỏ qua thư mục của Visual Studio
-.vs/
-bin/
-obj/
-Debug/
-Release/
-*.user
-*.suo
-*.vscode/
