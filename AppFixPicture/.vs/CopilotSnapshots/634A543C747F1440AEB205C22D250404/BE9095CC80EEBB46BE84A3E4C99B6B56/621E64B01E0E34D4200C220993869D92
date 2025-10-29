@@ -1,0 +1,289 @@
+﻿using System.Windows.Forms;
+
+namespace AppFixPicture
+{
+    partial class AnnotationForm
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.tsbtnOpen = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnSelect = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnPencil = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnRect = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnCircle = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnArrow = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnText = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnColor = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnFont = new System.Windows.Forms.ToolStripButton();
+            this.tscbFontSize = new System.Windows.Forms.ToolStripComboBox();
+            this.tsbtnUndo = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnRedo = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnSave = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnClear = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnZoomIn = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnZoomOut = new System.Windows.Forms.ToolStripButton();
+            this.tsbtnApply = new System.Windows.Forms.ToolStripButton();
+            this.pbCanvas = new System.Windows.Forms.PictureBox();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.tsslCoords = new System.Windows.Forms.ToolStripStatusLabel();
+            this.tsslTool = new System.Windows.Forms.ToolStripStatusLabel();
+            this.tsslZoom = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pbCanvas)).BeginInit();
+            this.statusStrip1.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // toolStrip1
+            // 
+            this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsbtnOpen,
+            this.tsbtnSelect,
+            this.tsbtnPencil,
+            this.tsbtnRect,
+            this.tsbtnCircle,
+            this.tsbtnArrow,
+            this.tsbtnText,
+            this.tsbtnColor,
+            this.tsbtnFont,
+            this.tscbFontSize,
+            this.tsbtnUndo,
+            this.tsbtnRedo,
+            this.tsbtnSave,
+            this.tsbtnClear,
+            this.tsbtnZoomIn,
+            this.tsbtnZoomOut,
+            this.tsbtnApply});
+            this.toolStrip1.Location = new System.Drawing.Point(0, 0);
+            this.toolStrip1.Name = "toolStrip1";
+            this.toolStrip1.Size = new System.Drawing.Size(800, 25);
+            this.toolStrip1.TabIndex = 0;
+            this.toolStrip1.Text = "toolStrip1";
+            // 
+            // tsbtnOpen
+            // 
+            this.tsbtnOpen.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnOpen.Name = "tsbtnOpen";
+            this.tsbtnOpen.Size = new System.Drawing.Size(36, 22);
+            this.tsbtnOpen.Text = "Open";
+            // 
+            // tsbtnSelect
+            // 
+            this.tsbtnSelect.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnSelect.Name = "tsbtnSelect";
+            this.tsbtnSelect.Size = new System.Drawing.Size(39, 22);
+            this.tsbtnSelect.Text = "Select";
+            // 
+            // tsbtnPencil
+            // 
+            this.tsbtnPencil.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnPencil.Name = "tsbtnPencil";
+            this.tsbtnPencil.Size = new System.Drawing.Size(42, 22);
+            this.tsbtnPencil.Text = "Pencil";
+            // 
+            // tsbtnRect
+            // 
+            this.tsbtnRect.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnRect.Name = "tsbtnRect";
+            this.tsbtnRect.Size = new System.Drawing.Size(62, 22);
+            this.tsbtnRect.Text = "Rectangle";
+            // 
+            // tsbtnCircle
+            // 
+            this.tsbtnCircle.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnCircle.Name = "tsbtnCircle";
+            this.tsbtnCircle.Size = new System.Drawing.Size(39, 22);
+            this.tsbtnCircle.Text = "Circle";
+            // 
+            // tsbtnArrow
+            // 
+            this.tsbtnArrow.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnArrow.Name = "tsbtnArrow";
+            this.tsbtnArrow.Size = new System.Drawing.Size(40, 22);
+            this.tsbtnArrow.Text = "Arrow";
+            // 
+            // tsbtnText
+            // 
+            this.tsbtnText.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnText.Name = "tsbtnText";
+            this.tsbtnText.Size = new System.Drawing.Size(53, 22);
+            this.tsbtnText.Text = "Add Text";
+            // 
+            // tsbtnColor
+            // 
+            this.tsbtnColor.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnColor.Name = "tsbtnColor";
+            this.tsbtnColor.Size = new System.Drawing.Size(36, 22);
+            this.tsbtnColor.Text = "Color";
+            // 
+            // tsbtnFont
+            // 
+            this.tsbtnFont.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnFont.Name = "tsbtnFont";
+            this.tsbtnFont.Size = new System.Drawing.Size(35, 22);
+            this.tsbtnFont.Text = "Font";
+            // 
+            // tscbFontSize
+            // 
+            this.tscbFontSize.Name = "tscbFontSize";
+            this.tscbFontSize.Size = new System.Drawing.Size(75, 25);
+            // 
+            // tsbtnUndo
+            // 
+            this.tsbtnUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnUndo.Name = "tsbtnUndo";
+            this.tsbtnUndo.Size = new System.Drawing.Size(40, 22);
+            this.tsbtnUndo.Text = "Undo";
+            // 
+            // tsbtnRedo
+            // 
+            this.tsbtnRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnRedo.Name = "tsbtnRedo";
+            this.tsbtnRedo.Size = new System.Drawing.Size(40, 22);
+            this.tsbtnRedo.Text = "Redo";
+            // 
+            // tsbtnSave
+            // 
+            this.tsbtnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnSave.Name = "tsbtnSave";
+            this.tsbtnSave.Size = new System.Drawing.Size(35, 22);
+            this.tsbtnSave.Text = "Save";
+            // 
+            // tsbtnClear
+            // 
+            this.tsbtnClear.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnClear.Name = "tsbtnClear";
+            this.tsbtnClear.Size = new System.Drawing.Size(38, 22);
+            this.tsbtnClear.Text = "Clear";
+            // 
+            // tsbtnZoomIn
+            // 
+            this.tsbtnZoomIn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnZoomIn.Name = "tsbtnZoomIn";
+            this.tsbtnZoomIn.Size = new System.Drawing.Size(52, 22);
+            this.tsbtnZoomIn.Text = "Zoom+";
+            // 
+            // tsbtnZoomOut
+            // 
+            this.tsbtnZoomOut.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnZoomOut.Name = "tsbtnZoomOut";
+            this.tsbtnZoomOut.Size = new System.Drawing.Size(53, 22);
+            this.tsbtnZoomOut.Text = "Zoom-";
+            // 
+            // tsbtnApply
+            // 
+            this.tsbtnApply.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbtnApply.Name = "tsbtnApply";
+            this.tsbtnApply.Size = new System.Drawing.Size(39, 22);
+            this.tsbtnApply.Text = "Apply";
+            // 
+            // pbCanvas
+            // 
+            this.pbCanvas.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pbCanvas.Location = new System.Drawing.Point(0, 25);
+            this.pbCanvas.Name = "pbCanvas";
+            this.pbCanvas.Size = new System.Drawing.Size(800, 403);
+            this.pbCanvas.TabIndex = 1;
+            this.pbCanvas.TabStop = false;
+            this.pbCanvas.BackColor = System.Drawing.Color.White;
+            // 
+            // statusStrip1
+            // 
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsslCoords,
+            this.tsslTool,
+            this.tsslZoom});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 428);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(800, 22);
+            this.statusStrip1.TabIndex = 2;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // tsslCoords
+            // 
+            this.tsslCoords.Name = "tsslCoords";
+            this.tsslCoords.Size = new System.Drawing.Size(118, 17);
+            this.tsslCoords.Text = "X:0 Y:0";
+            // 
+            // tsslTool
+            // 
+            this.tsslTool.Name = "tsslTool";
+            this.tsslTool.Size = new System.Drawing.Size(70, 17);
+            this.tsslTool.Text = "Tool: None";
+            // 
+            // tsslZoom
+            // 
+            this.tsslZoom.Name = "tsslZoom";
+            this.tsslZoom.Size = new System.Drawing.Size(68, 17);
+            this.tsslZoom.Text = "Zoom: 100%";
+            // 
+            // AnnotationForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.pbCanvas);
+            this.Controls.Add(this.toolStrip1);
+            this.Controls.Add(this.statusStrip1);
+            this.Name = "AnnotationForm";
+            this.Text = "Annotation";
+            this.toolStrip1.ResumeLayout(false);
+            this.toolStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pbCanvas)).EndInit();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+        }
+
+        #endregion
+
+        private System.Windows.Forms.ToolStrip toolStrip1;
+        private System.Windows.Forms.PictureBox pbCanvas;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel tsslCoords;
+        private System.Windows.Forms.ToolStripStatusLabel tsslTool;
+        private System.Windows.Forms.ToolStripStatusLabel tsslZoom;
+        private System.Windows.Forms.ToolStripButton tsbtnOpen;
+        private System.Windows.Forms.ToolStripButton tsbtnSelect;
+        private System.Windows.Forms.ToolStripButton tsbtnPencil;
+        private System.Windows.Forms.ToolStripButton tsbtnRect;
+        private System.Windows.Forms.ToolStripButton tsbtnCircle;
+        private System.Windows.Forms.ToolStripButton tsbtnArrow;
+        private System.Windows.Forms.ToolStripButton tsbtnText;
+        private System.Windows.Forms.ToolStripButton tsbtnColor;
+        private System.Windows.Forms.ToolStripButton tsbtnFont;
+        private System.Windows.Forms.ToolStripComboBox tscbFontSize;
+        private System.Windows.Forms.ToolStripButton tsbtnUndo;
+        private System.Windows.Forms.ToolStripButton tsbtnRedo;
+        private System.Windows.Forms.ToolStripButton tsbtnSave;
+        private System.Windows.Forms.ToolStripButton tsbtnClear;
+        private System.Windows.Forms.ToolStripButton tsbtnZoomIn;
+        private System.Windows.Forms.ToolStripButton tsbtnZoomOut;
+        private System.Windows.Forms.ToolStripButton tsbtnApply;
+    }
+}

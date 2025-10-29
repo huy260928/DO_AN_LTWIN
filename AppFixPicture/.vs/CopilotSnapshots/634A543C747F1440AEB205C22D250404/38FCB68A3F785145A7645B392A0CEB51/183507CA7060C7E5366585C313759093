@@ -1,0 +1,428 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Windows.Forms;
+
+namespace AppFixPicture
+{
+    public class AnnotationForm : Form
+    {
+        private enum Tool { None, Select, Pencil, Rectangle, Circle, Arrow, Text }
+
+        // state
+        private Tool currentTool = Tool.Pencil;
+        private Color currentColor = Color.Red;
+        private float zoom = 1.0f;
+        private int currentFontSize = 12;
+        private Pen currentPen => new Pen(currentColor, 2);
+
+        private Bitmap baseBitmap;
+        private Bitmap workingBitmap;
+        private Stack<Bitmap> undoStack = new Stack<Bitmap>();
+        private Stack<Bitmap> redoStack = new Stack<Bitmap>();
+        private bool isDrawing = false;
+        private Point lastPoint;
+
+        // controls
+        private ToolStrip toolStripTop;
+        private ToolStripButton btnSelect, btnPencil, btnRect, btnCircle, btnArrow, btnText;
+        private ToolStripButton btnColor, btnFont;
+        private ToolStripComboBox cbFontSize;
+        private ToolStripButton btnUndo, btnRedo, btnSave, btnClear, btnZoomIn, btnZoomOut, btnApply;
+        private ToolStripButton btnOpen;
+        private PictureBox pictureBoxCanvas;
+        private StatusStrip statusStripBottom;
+        private ToolStripStatusLabel statusCoords, statusTool, statusZoom;
+
+        // Expose edited image to caller when user applies annotations
+        public Bitmap EditedImage { get; private set; }
+
+        public AnnotationForm()
+        {
+            Text = "Annotation";
+            ClientSize = new Size(1000, 700);
+            InitializeControls();
+            WireEvents();
+            UpdateStatus();
+        }
+
+        // New constructor to accept initial image from Form1
+        public AnnotationForm(Image initialImage) : this()
+        {
+            if (initialImage != null)
+            {
+                baseBitmap = new Bitmap(initialImage);
+                workingBitmap?.Dispose();
+                workingBitmap = new Bitmap(baseBitmap);
+                pictureBoxCanvas.Image = workingBitmap;
+                zoom = 1.0f;
+                UpdateStatus();
+            }
+        }
+
+        private void InitializeControls()
+        {
+            // toolstrip
+            toolStripTop = new ToolStrip { Dock = DockStyle.Top };
+            btnOpen = new ToolStripButton("Open");
+            btnSelect = new ToolStripButton("Select");
+            btnPencil = new ToolStripButton("Pencil");
+            btnRect = new ToolStripButton("Rectangle");
+            btnCircle = new ToolStripButton("Circle");
+            btnArrow = new ToolStripButton("Arrow");
+            btnText = new ToolStripButton("Add Text");
+            btnColor = new ToolStripButton("Color");
+            btnFont = new ToolStripButton("Font");
+            cbFontSize = new ToolStripComboBox();
+            for (int i = 8; i <= 72; i += 2) cbFontSize.Items.Add(i.ToString());
+            cbFontSize.Text = currentFontSize.ToString();
+            btnUndo = new ToolStripButton("Undo");
+            btnRedo = new ToolStripButton("Redo");
+            btnSave = new ToolStripButton("Save");
+            btnClear = new ToolStripButton("Clear");
+            btnZoomIn = new ToolStripButton("Zoom+");
+            btnZoomOut = new ToolStripButton("Zoom-");
+            btnApply = new ToolStripButton("Apply");
+
+            toolStripTop.Items.AddRange(new ToolStripItem[] {
+                btnOpen, btnSelect, btnPencil, btnRect, btnCircle, btnArrow, btnText,
+                btnColor, btnFont, cbFontSize, btnUndo, btnRedo, btnSave, btnClear, btnZoomIn, btnZoomOut, btnApply
+            });
+
+            // picturebox
+            pictureBoxCanvas = new PictureBox { Dock = DockStyle.Fill, BackColor = Color.LightGray, SizeMode = PictureBoxSizeMode.Normal };
+
+            // status
+            statusStripBottom = new StatusStrip();
+            statusCoords = new ToolStripStatusLabel("X:0 Y:0");
+            statusTool = new ToolStripStatusLabel("Tool: Pencil");
+            statusZoom = new ToolStripStatusLabel("Zoom: 100%");
+            statusStripBottom.Items.AddRange(new ToolStripItem[] { statusCoords, statusTool, statusZoom });
+
+            Controls.Add(pictureBoxCanvas);
+            Controls.Add(statusStripBottom);
+            Controls.Add(toolStripTop);
+        }
+
+        private void WireEvents()
+        {
+            btnOpen.Click += BtnOpen_Click;
+            btnColor.Click += BtnColor_Click;
+            btnFont.Click += BtnFont_Click;
+            cbFontSize.SelectedIndexChanged += (s, e) => { if (int.TryParse(cbFontSize.Text, out int v)) currentFontSize = v; };
+
+            btnSelect.Click += (s, e) => SetTool(Tool.Select);
+            btnPencil.Click += (s, e) => SetTool(Tool.Pencil);
+            btnRect.Click += (s, e) => SetTool(Tool.Rectangle);
+            btnCircle.Click += (s, e) => SetTool(Tool.Circle);
+            btnArrow.Click += (s, e) => SetTool(Tool.Arrow);
+            btnText.Click += (s, e) => SetTool(Tool.Text);
+
+            btnUndo.Click += BtnUndo_Click;
+            btnRedo.Click += BtnRedo_Click;
+            btnSave.Click += BtnSave_Click;
+            btnClear.Click += BtnClear_Click;
+            btnZoomIn.Click += (s, e) => { zoom += 0.1f; ApplyZoom(); };
+            btnZoomOut.Click += (s, e) => { zoom = Math.Max(0.1f, zoom - 0.1f); ApplyZoom(); };
+            btnApply.Click += (s, e) => ApplyAnnotationsAndClose();
+
+            pictureBoxCanvas.MouseDown += PictureBoxCanvas_MouseDown;
+            pictureBoxCanvas.MouseMove += PictureBoxCanvas_MouseMove;
+            pictureBoxCanvas.MouseUp += PictureBoxCanvas_MouseUp;
+            pictureBoxCanvas.Paint += PictureBoxCanvas_Paint;
+        }
+
+        private void SetTool(Tool t)
+        {
+            currentTool = t;
+            statusTool.Text = "Tool: " + t.ToString();
+            UpdateStatus();
+        }
+
+        private void BtnOpen_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    var img = Image.FromFile(ofd.FileName);
+                    baseBitmap?.Dispose();
+                    workingBitmap?.Dispose();
+                    baseBitmap = new Bitmap(img);
+                    workingBitmap = new Bitmap(baseBitmap);
+                    pictureBoxCanvas.Image = workingBitmap;
+                    undoStack.Clear();
+                    redoStack.Clear();
+                    zoom = 1.0f;
+                    UpdateStatus();
+                }
+            }
+        }
+
+        private void BtnColor_Click(object sender, EventArgs e)
+        {
+            using (ColorDialog cd = new ColorDialog())
+            {
+                if (cd.ShowDialog() == DialogResult.OK)
+                {
+                    currentColor = cd.Color;
+                    UpdateStatus();
+                }
+            }
+        }
+
+        private void BtnFont_Click(object sender, EventArgs e)
+        {
+            using (FontDialog fd = new FontDialog())
+            {
+                if (fd.ShowDialog() == DialogResult.OK)
+                {
+                    currentFontSize = (int)fd.Font.Size;
+                    cbFontSize.Text = currentFontSize.ToString();
+                }
+            }
+        }
+
+        private void BtnUndo_Click(object sender, EventArgs e)
+        {
+            if (undoStack.Count > 0)
+            {
+                redoStack.Push(new Bitmap(workingBitmap));
+                workingBitmap = undoStack.Pop();
+                pictureBoxCanvas.Image = workingBitmap;
+                pictureBoxCanvas.Invalidate();
+            }
+        }
+
+        private void BtnRedo_Click(object sender, EventArgs e)
+        {
+            if (redoStack.Count > 0)
+            {
+                undoStack.Push(new Bitmap(workingBitmap));
+                workingBitmap = redoStack.Pop();
+                pictureBoxCanvas.Image = workingBitmap;
+                pictureBoxCanvas.Invalidate();
+            }
+        }
+
+        private void BtnSave_Click(object sender, EventArgs e)
+        {
+            if (workingBitmap == null) return;
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "PNG Image|*.png|JPEG Image|*.jpg";
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    var fmt = System.Drawing.Imaging.ImageFormat.Png;
+                    if (sfd.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)) fmt = System.Drawing.Imaging.ImageFormat.Jpeg;
+                    workingBitmap.Save(sfd.FileName, fmt);
+                }
+            }
+        }
+
+        private void BtnClear_Click(object sender, EventArgs e)
+        {
+            if (baseBitmap == null) return;
+            PushUndo();
+            workingBitmap?.Dispose();
+            workingBitmap = new Bitmap(baseBitmap);
+            pictureBoxCanvas.Image = workingBitmap;
+            pictureBoxCanvas.Invalidate();
+        }
+
+        // Apply and close: set EditedImage and close dialog with OK
+        private void ApplyAnnotationsAndClose()
+        {
+            if (workingBitmap == null)
+            {
+                MessageBox.Show("No image to apply.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // update base and produce edited copy for caller
+            baseBitmap?.Dispose();
+            baseBitmap = new Bitmap(workingBitmap);
+            undoStack.Clear();
+            redoStack.Clear();
+
+            // provide EditedImage as a copy
+            EditedImage?.Dispose();
+            EditedImage = new Bitmap(workingBitmap);
+
+            this.DialogResult = DialogResult.OK;
+            this.Close();
+        }
+
+        private void PushUndo()
+        {
+            if (workingBitmap == null) return;
+            undoStack.Push(new Bitmap(workingBitmap));
+            redoStack.Clear();
+        }
+
+        private void PictureBoxCanvas_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            isDrawing = true;
+            lastPoint = e.Location;
+            if (currentTool == Tool.Pencil || currentTool == Tool.Rectangle || currentTool == Tool.Circle || currentTool == Tool.Arrow || currentTool == Tool.Text)
+                PushUndo();
+        }
+
+        private void PictureBoxCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            statusCoords.Text = $"X:{e.X} Y:{e.Y}";
+            if (!isDrawing) return;
+
+            if (currentTool == Tool.Pencil)
+            {
+                using (Graphics g = Graphics.FromImage(workingBitmap))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (Pen p = new Pen(currentColor, 2))
+                        g.DrawLine(p, lastPoint, e.Location);
+                }
+                lastPoint = e.Location;
+                pictureBoxCanvas.Invalidate();
+            }
+            else
+            {
+                // preview handled in Paint
+                pictureBoxCanvas.Invalidate();
+            }
+        }
+
+        private void PictureBoxCanvas_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            isDrawing = false;
+            if (currentTool == Tool.Rectangle)
+            {
+                var r = GetRect(lastPoint, e.Location);
+                using (Graphics g = Graphics.FromImage(workingBitmap))
+                {
+                    using (Pen p = new Pen(currentColor, 2)) g.DrawRectangle(p, r);
+                }
+                pictureBoxCanvas.Invalidate();
+            }
+            else if (currentTool == Tool.Circle)
+            {
+                var r = GetRect(lastPoint, e.Location);
+                using (Graphics g = Graphics.FromImage(workingBitmap))
+                {
+                    using (Pen p = new Pen(currentColor, 2)) g.DrawEllipse(p, r);
+                }
+                pictureBoxCanvas.Invalidate();
+            }
+            else if (currentTool == Tool.Arrow)
+            {
+                DrawArrowOnBitmap(lastPoint, e.Location);
+                pictureBoxCanvas.Invalidate();
+            }
+            else if (currentTool == Tool.Text)
+            {
+                string txt = PromptText("Enter text:");
+                if (!string.IsNullOrEmpty(txt))
+                {
+                    using (Graphics g = Graphics.FromImage(workingBitmap))
+                    using (Font f = new Font(FontFamily.GenericSansSerif, currentFontSize))
+                    using (Brush b = new SolidBrush(currentColor))
+                    {
+                        g.DrawString(txt, f, b, e.Location);
+                    }
+                    pictureBoxCanvas.Invalidate();
+                }
+            }
+            UpdateStatus();
+        }
+
+        private void PictureBoxCanvas_Paint(object sender, PaintEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            if (isDrawing && (currentTool == Tool.Rectangle || currentTool == Tool.Circle || currentTool == Tool.Arrow))
+            {
+                var mouse = pictureBoxCanvas.PointToClient(Cursor.Position);
+                var r = GetRect(lastPoint, mouse);
+                using (Pen p = new Pen(currentColor, 2))
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    if (currentTool == Tool.Rectangle) e.Graphics.DrawRectangle(p, r);
+                    else if (currentTool == Tool.Circle) e.Graphics.DrawEllipse(p, r);
+                    else if (currentTool == Tool.Arrow) DrawArrow(e.Graphics, lastPoint, mouse, p);
+                }
+            }
+        }
+
+        private Rectangle GetRect(Point p1, Point p2)
+        {
+            return new Rectangle(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), Math.Abs(p1.X - p2.X), Math.Abs(p1.Y - p2.Y));
+        }
+
+        private void DrawArrowOnBitmap(Point p1, Point p2)
+        {
+            using (Graphics g = Graphics.FromImage(workingBitmap))
+            using (Pen p = new Pen(currentColor, 2))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                DrawArrow(g, p1, p2, p);
+            }
+        }
+
+        private void DrawArrow(Graphics g, Point p1, Point p2, Pen p)
+        {
+            g.DrawLine(p, p1, p2);
+            var ang = Math.Atan2(p2.Y - p1.Y, p2.X - p1.X);
+            int len = 10;
+            PointF p3 = new PointF((float)(p2.X - len * Math.Cos(ang) + len * Math.Sin(ang)), (float)(p2.Y - len * Math.Sin(ang) - len * Math.Cos(ang)));
+            PointF p4 = new PointF((float)(p2.X - len * Math.Cos(ang) - len * Math.Sin(ang)), (float)(p2.Y - len * Math.Sin(ang) + len * Math.Cos(ang)));
+            g.FillPolygon(new SolidBrush(p.Color), new PointF[] { p2, p3, p4 });
+        }
+
+        private string PromptText(string prompt)
+        {
+            using (Form f = new Form())
+            using (TextBox tb = new TextBox() { Left = 10, Top = 30, Width = 360 })
+            using (Button ok = new Button() { Text = "OK", Left = 200, Width = 80, Top = 60, DialogResult = DialogResult.OK })
+            using (Button cancel = new Button() { Text = "Cancel", Left = 290, Width = 80, Top = 60, DialogResult = DialogResult.Cancel })
+            {
+                f.Text = prompt;
+                f.ClientSize = new Size(400, 110);
+                f.Controls.Add(new Label() { Left = 10, Top = 8, Text = prompt, AutoSize = true });
+                f.Controls.Add(tb);
+                f.Controls.Add(ok);
+                f.Controls.Add(cancel);
+                f.AcceptButton = ok;
+                f.CancelButton = cancel;
+                return f.ShowDialog(this) == DialogResult.OK ? tb.Text : null;
+            }
+        }
+
+        private void ApplyZoom()
+        {
+            if (baseBitmap == null) return;
+            int w = (int)(baseBitmap.Width * zoom);
+            int h = (int)(baseBitmap.Height * zoom);
+            var newBmp = new Bitmap(w, h);
+            using (Graphics g = Graphics.FromImage(newBmp))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(baseBitmap, 0, 0, w, h);
+            }
+            workingBitmap?.Dispose();
+            workingBitmap = newBmp;
+            pictureBoxCanvas.Image = workingBitmap;
+            statusZoom.Text = $"Zoom: {(int)(zoom * 100)}%";
+            pictureBoxCanvas.Invalidate();
+        }
+
+        private void UpdateStatus()
+        {
+            statusTool.Text = "Tool: " + currentTool.ToString();
+            statusZoom.Text = $"Zoom: {(int)(zoom * 100)}%";
+            // coords left as 0 until mouse move
+        }
+    }
+}

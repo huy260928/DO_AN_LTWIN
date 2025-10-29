@@ -1,0 +1,94 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace AppFixPicture
+{
+    public partial class frmEditVideo : Form
+    {
+        private TimeSpan startTime = TimeSpan.Zero;
+        private TimeSpan endTime = TimeSpan.Zero;
+
+        public frmEditVideo()
+        {
+            InitializeComponent();
+
+            // Hook up basic events
+            btnOpen.Click += BtnOpen_Click;
+            btnPlay.Click += BtnPlay_Click;
+            btnPause.Click += BtnPause_Click;
+            btnBackward.Click += BtnBackward_Click;
+            btnForward.Click += BtnForward_Click;
+            btnSetStart.Click += BtnSetStart_Click;
+            btnSetEnd.Click += BtnSetEnd_Click;
+            btnTrim.Click += BtnTrim_Click;
+            btnSaveExport.Click += BtnSaveExport_Click;
+            trackBarTime.Scroll += TrackBarTime_Scroll;
+
+            // initialize labels
+            lblStartTime.Text = "Start: 00:00:00";
+            lblEndTime.Text = "End: 00:00:00";
+        }
+
+        private void BtnOpen_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Open clicked (implement file open and load into axPlayer).", "Info");
+        }
+
+        private void BtnPlay_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Play clicked (hook to player.play()).", "Info");
+        }
+
+        private void BtnPause_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Pause clicked (hook to player.pause()).", "Info");
+        }
+
+        private void BtnBackward_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Backward clicked (seek backward).", "Info");
+        }
+
+        private void BtnForward_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Forward clicked (seek forward).", "Info");
+        }
+
+        private void BtnSetStart_Click(object sender, EventArgs e)
+        {
+            // For demo: set start to trackbar value (assuming trackBar max = seconds)
+            startTime = TimeSpan.FromSeconds(trackBarTime.Value);
+            lblStartTime.Text = "Start: " + startTime.ToString("hh\:mm\:ss");
+        }
+
+        private void BtnSetEnd_Click(object sender, EventArgs e)
+        {
+            endTime = TimeSpan.FromSeconds(trackBarTime.Value);
+            lblEndTime.Text = "End: " + endTime.ToString("hh\:mm\:ss");
+        }
+
+        private void BtnTrim_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show($"Trim from {startTime} to {endTime} (implement export logic).", "Trim");
+        }
+
+        private void BtnSaveExport_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Save/Export clicked (implement save/export logic).", "Info");
+        }
+
+        private void TrackBarTime_Scroll(object sender, EventArgs e)
+        {
+            // Update preview time label or other UI if needed
+            // For demo, update form title with seconds
+            this.Text = $"Video Editor - Position: {trackBarTime.Value}s";
+        }
+    }
+}

@@ -1,0 +1,407 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Windows.Forms;
+
+namespace AppFixPicture
+{
+    public partial class AnnotationForm : Form
+    {
+        private enum Tool
+        {
+            None,
+            Select,
+            Pencil,
+            Rectangle,
+            Circle,
+            Arrow,
+            Text
+        }
+
+        private Tool currentTool = Tool.None;
+        private Bitmap baseBitmap;
+        private Bitmap workingBitmap;
+        private Stack<Bitmap> undoStack = new Stack<Bitmap>();
+        private Stack<Bitmap> redoStack = new Stack<Bitmap>();
+        private Point lastPoint;
+        private bool isDrawing = false;
+        private Pen currentPen = new Pen(Color.Red, 2);
+        private Color currentColor = Color.Red;
+        private int currentFontSize = 12;
+        private float zoom = 1.0f;
+
+        public AnnotationForm()
+        {
+            InitializeComponent();
+
+            // initialize font sizes
+            for (int i = 8; i <= 72; i += 2)
+                tscbFontSize.Items.Add(i.ToString());
+            tscbFontSize.Text = currentFontSize.ToString();
+
+            // wire up events
+            tsbtnOpen.Click += TsbtnOpen_Click;
+            tsbtnPencil.Click += (s, e) => SetTool(Tool.Pencil);
+            tsbtnSelect.Click += (s, e) => SetTool(Tool.Select);
+            tsbtnRect.Click += (s, e) => SetTool(Tool.Rectangle);
+            tsbtnCircle.Click += (s, e) => SetTool(Tool.Circle);
+            tsbtnArrow.Click += (s, e) => SetTool(Tool.Arrow);
+            tsbtnText.Click += (s, e) => SetTool(Tool.Text);
+            tsbtnColor.Click += TsbtnColor_Click;
+            tsbtnFont.Click += TsbtnFont_Click;
+            tscbFontSize.SelectedIndexChanged += TscbFontSize_SelectedIndexChanged;
+            tsbtnUndo.Click += TsbtnUndo_Click;
+            tsbtnRedo.Click += TsbtnRedo_Click;
+            tsbtnSave.Click += TsbtnSave_Click;
+            tsbtnClear.Click += TsbtnClear_Click;
+            tsbtnZoomIn.Click += TsbtnZoomIn_Click;
+            tsbtnZoomOut.Click += TsbtnZoomOut_Click;
+            tsbtnApply.Click += TsbtnApply_Click;
+
+            pbCanvas.MouseDown += PbCanvas_MouseDown;
+            pbCanvas.MouseMove += PbCanvas_MouseMove;
+            pbCanvas.MouseUp += PbCanvas_MouseUp;
+            pbCanvas.Paint += PbCanvas_Paint;
+
+            UpdateStatus();
+        }
+
+        private void SetTool(Tool t)
+        {
+            currentTool = t;
+            tsslTool.Text = "Tool: " + t.ToString();
+            UpdateStatus();
+        }
+
+        private void TsbtnOpen_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    var img = Image.FromFile(ofd.FileName);
+                    baseBitmap = new Bitmap(img);
+                    workingBitmap = new Bitmap(baseBitmap);
+                    pbCanvas.Image = workingBitmap;
+                    undoStack.Clear();
+                    redoStack.Clear();
+                    zoom = 1.0f;
+                    ApplyZoom();
+                    UpdateStatus();
+                }
+            }
+        }
+
+        private void TsbtnColor_Click(object sender, EventArgs e)
+        {
+            using (ColorDialog cd = new ColorDialog())
+            {
+                if (cd.ShowDialog() == DialogResult.OK)
+                {
+                    currentColor = cd.Color;
+                    currentPen.Color = currentColor;
+                    UpdateStatus();
+                }
+            }
+        }
+
+        private void TsbtnFont_Click(object sender, EventArgs e)
+        {
+            using (FontDialog fd = new FontDialog())
+            {
+                if (fd.ShowDialog() == DialogResult.OK)
+                {
+                    tscbFontSize.Text = ((int)fd.Font.Size).ToString();
+                    currentFontSize = (int)fd.Font.Size;
+                    UpdateStatus();
+                }
+            }
+        }
+
+        private void TscbFontSize_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int val;
+            if (int.TryParse(tscbFontSize.Text, out val))
+            {
+                currentFontSize = val;
+                UpdateStatus();
+            }
+        }
+
+        private void PushUndo()
+        {
+            if (workingBitmap == null) return;
+            undoStack.Push(new Bitmap(workingBitmap));
+            // clear redo
+            redoStack.Clear();
+        }
+
+        private void TsbtnUndo_Click(object sender, EventArgs e)
+        {
+            if (undoStack.Count > 0)
+            {
+                redoStack.Push(new Bitmap(workingBitmap));
+                workingBitmap = undoStack.Pop();
+                pbCanvas.Image = workingBitmap;
+                pbCanvas.Invalidate();
+            }
+        }
+
+        private void TsbtnRedo_Click(object sender, EventArgs e)
+        {
+            if (redoStack.Count > 0)
+            {
+                undoStack.Push(new Bitmap(workingBitmap));
+                workingBitmap = redoStack.Pop();
+                pbCanvas.Image = workingBitmap;
+                pbCanvas.Invalidate();
+            }
+        }
+
+        private void TsbtnSave_Click(object sender, EventArgs e)
+        {
+            if (workingBitmap == null) return;
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "PNG Image|*.png|JPEG Image|*.jpg";
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    var fmt = System.Drawing.Imaging.ImageFormat.Png;
+                    if (sfd.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+                        fmt = System.Drawing.Imaging.ImageFormat.Jpeg;
+                    workingBitmap.Save(sfd.FileName, fmt);
+                }
+            }
+        }
+
+        private void TsbtnClear_Click(object sender, EventArgs e)
+        {
+            if (baseBitmap == null) return;
+            PushUndo();
+            workingBitmap = new Bitmap(baseBitmap);
+            pbCanvas.Image = workingBitmap;
+            pbCanvas.Invalidate();
+        }
+
+        private void TsbtnZoomIn_Click(object sender, EventArgs e)
+        {
+            zoom += 0.1f;
+            ApplyZoom();
+        }
+
+        private void TsbtnZoomOut_Click(object sender, EventArgs e)
+        {
+            zoom = Math.Max(0.1f, zoom - 0.1f);
+            ApplyZoom();
+        }
+
+        private void ApplyZoom()
+        {
+            if (baseBitmap == null) return;
+            int w = (int)(baseBitmap.Width * zoom);
+            int h = (int)(baseBitmap.Height * zoom);
+            // create a resized working bitmap but preserve drawings if any by drawing source onto new
+            Bitmap newBmp = new Bitmap(w, h);
+            using (Graphics g = Graphics.FromImage(newBmp))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.Clear(Color.White);
+                g.DrawImage(baseBitmap, 0, 0, w, h);
+                if (workingBitmap != null && workingBitmap != baseBitmap)
+                {
+                    // overlay existing annotations scaled
+                    g.DrawImage(workingBitmap, 0, 0, w, h);
+                }
+            }
+            workingBitmap = newBmp;
+            pbCanvas.Image = workingBitmap;
+            pbCanvas.Width = w;
+            pbCanvas.Height = h;
+            tsslZoom.Text = "Zoom: " + (int)(zoom * 100) + "%";
+            pbCanvas.Invalidate();
+        }
+
+        private void TsbtnApply_Click(object sender, EventArgs e)
+        {
+            // apply annotations to base image
+            if (workingBitmap == null || baseBitmap == null) return;
+            baseBitmap = new Bitmap(workingBitmap);
+            undoStack.Clear();
+            redoStack.Clear();
+            MessageBox.Show("Applied annotations to base image", "Info");
+        }
+
+        private void PbCanvas_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            isDrawing = true;
+            lastPoint = e.Location;
+            if (currentTool == Tool.Pencil)
+            {
+                PushUndo();
+            }
+            else if (currentTool == Tool.Rectangle || currentTool == Tool.Circle || currentTool == Tool.Arrow || currentTool == Tool.Text)
+            {
+                PushUndo();
+            }
+        }
+
+        private void PbCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            tsslCoords.Text = $"X:{e.X} Y:{e.Y}";
+            if (!isDrawing) return;
+
+            if (currentTool == Tool.Pencil)
+            {
+                using (Graphics g = Graphics.FromImage(workingBitmap))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.DrawLine(currentPen, lastPoint, e.Location);
+                }
+                lastPoint = e.Location;
+                pbCanvas.Invalidate();
+            }
+            else
+            {
+                // for shape drawing we just request repaint to show preview
+                pbCanvas.Invalidate();
+            }
+        }
+
+        private void PbCanvas_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            isDrawing = false;
+            if (currentTool == Tool.Rectangle)
+            {
+                Rectangle rect = GetRect(lastPoint, e.Location);
+                using (Graphics g = Graphics.FromImage(workingBitmap))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.DrawRectangle(currentPen, rect);
+                }
+                pbCanvas.Invalidate();
+            }
+            else if (currentTool == Tool.Circle)
+            {
+                Rectangle rect = GetRect(lastPoint, e.Location);
+                using (Graphics g = Graphics.FromImage(workingBitmap))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.DrawEllipse(currentPen, rect);
+                }
+                pbCanvas.Invalidate();
+            }
+            else if (currentTool == Tool.Arrow)
+            {
+                DrawArrowOnBitmap(lastPoint, e.Location);
+                pbCanvas.Invalidate();
+            }
+            else if (currentTool == Tool.Text)
+            {
+                string text = GetTextFromUser("Enter text:", "Add Text");
+                if (!string.IsNullOrEmpty(text))
+                {
+                    using (Graphics g = Graphics.FromImage(workingBitmap))
+                    {
+                        using (Font f = new Font(FontFamily.GenericSansSerif, currentFontSize))
+                        using (Brush br = new SolidBrush(currentColor))
+                        {
+                            g.DrawString(text, f, br, e.Location);
+                        }
+                    }
+                    pbCanvas.Invalidate();
+                }
+            }
+            UpdateStatus();
+        }
+
+        private void PbCanvas_Paint(object sender, PaintEventArgs e)
+        {
+            if (workingBitmap == null) return;
+            // draw the current bitmap (image is already set on picturebox)
+            // For shape preview while dragging
+            if (isDrawing && (currentTool == Tool.Rectangle || currentTool == Tool.Circle || currentTool == Tool.Arrow))
+            {
+                Point mousePos = pbCanvas.PointToClient(Cursor.Position);
+                Rectangle rect = GetRect(lastPoint, mousePos);
+                using (Pen p = new Pen(currentColor, currentPen.Width))
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    if (currentTool == Tool.Rectangle)
+                        e.Graphics.DrawRectangle(p, rect);
+                    else if (currentTool == Tool.Circle)
+                        e.Graphics.DrawEllipse(p, rect);
+                    else if (currentTool == Tool.Arrow)
+                        DrawArrow(e.Graphics, lastPoint, mousePos, p);
+                }
+            }
+        }
+
+        private Rectangle GetRect(Point p1, Point p2)
+        {
+            return new Rectangle(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), Math.Abs(p1.X - p2.X), Math.Abs(p1.Y - p2.Y));
+        }
+
+        private void DrawArrowOnBitmap(Point p1, Point p2)
+        {
+            using (Graphics g = Graphics.FromImage(workingBitmap))
+            {
+                using (Pen p = new Pen(currentColor, currentPen.Width))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    DrawArrow(g, p1, p2, p);
+                }
+            }
+        }
+
+        private void DrawArrow(Graphics g, Point p1, Point p2, Pen p)
+        {
+            g.DrawLine(p, p1, p2);
+            // draw simple arrow head
+            var ang = Math.Atan2(p2.Y - p1.Y, p2.X - p1.X);
+            var sin = Math.Sin(ang);
+            var cos = Math.Cos(ang);
+            int len = 10;
+            PointF p3 = new PointF((float)(p2.X - len * cos + len * sin), (float)(p2.Y - len * sin - len * cos));
+            PointF p4 = new PointF((float)(p2.X - len * cos - len * sin), (float)(p2.Y - len * sin + len * cos));
+            g.FillPolygon(new SolidBrush(p.Color), new PointF[] { p2, p3, p4 });
+        }
+
+        private void UpdateStatus()
+        {
+            if (tsslCoords != null)
+                tsslCoords.Text = "X:0 Y:0";
+            if (tsslTool != null)
+                tsslTool.Text = "Tool: " + currentTool.ToString();
+            if (tsslZoom != null)
+                tsslZoom.Text = "Zoom: " + (int)(zoom * 100) + "%";
+        }
+
+        private string GetTextFromUser(string prompt, string title)
+        {
+            using (Form form = new Form())
+            {
+                form.Text = title;
+                form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.ClientSize = new Size(400, 100);
+                Label lbl = new Label() { Left = 10, Top = 10, Text = prompt, AutoSize = true };
+                TextBox txt = new TextBox() { Left = 10, Top = 30, Width = 370 };
+                Button ok = new Button() { Text = "OK", Left = 220, Width = 75, Top = 60, DialogResult = DialogResult.OK };
+                Button cancel = new Button() { Text = "Cancel", Left = 300, Width = 75, Top = 60, DialogResult = DialogResult.Cancel };
+                form.Controls.Add(lbl);
+                form.Controls.Add(txt);
+                form.Controls.Add(ok);
+                form.Controls.Add(cancel);
+                form.AcceptButton = ok;
+                form.CancelButton = cancel;
+
+                return form.ShowDialog(this) == DialogResult.OK ? txt.Text : null;
+            }
+        }
+    }
+}

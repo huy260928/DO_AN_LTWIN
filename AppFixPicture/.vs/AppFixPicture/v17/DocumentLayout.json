@@ -1,0 +1,231 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\formeditvideo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:formeditvideo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|c:\\users\\asus\\source\\repos\\afp\\appfixpicture\\formeditvideo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:formeditvideo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\formeditvideo.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:formeditvideo.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\formcrop.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:formcrop.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\formcrop.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:formcrop.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\annotationform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:annotationform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2CA369E8-21EA-400A-A444-19C5D2237D26}|AppFixPicture.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\ASUS\\source\\repos\\AFP.BLL\\AFP.BLL\\Services\\ProjectService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\UnitOfWork.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\IUnitOfWork.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\IGenericRepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\GenericRepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "FormEditVideo.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormEditVideo.cs",
+              "RelativeDocumentMoniker": "FormEditVideo.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormEditVideo.cs [Design]",
+              "RelativeToolTip": "FormEditVideo.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T09:20:05.793Z",
+              "EditorCaption": " [Design]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FormEditVideo.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormEditVideo.cs",
+              "RelativeDocumentMoniker": "FormEditVideo.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormEditVideo.cs",
+              "RelativeToolTip": "FormEditVideo.cs",
+              "ViewState": "AgIAACcBAAAAAAAAAAAgwDEBAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-24T07:12:32.044Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "FormCrop.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormCrop.cs",
+              "RelativeDocumentMoniker": "FormCrop.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormCrop.cs",
+              "RelativeToolTip": "FormCrop.cs",
+              "ViewState": "AgIAAFcDAAAAAAAAAAAEwGoDAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-14T06:24:44.441Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "FormEditVideo.Designer.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormEditVideo.Designer.cs",
+              "RelativeDocumentMoniker": "FormEditVideo.Designer.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormEditVideo.Designer.cs",
+              "RelativeToolTip": "FormEditVideo.Designer.cs",
+              "ViewState": "AgIAADABAAAAAAAAAAAwwD8BAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T09:28:54.187Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "FormCrop.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\FormCrop.cs",
+              "RelativeDocumentMoniker": "FormCrop.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AppFixPicture\\FormCrop.cs [Design]",
+              "RelativeToolTip": "..\\..\\AppFixPicture\\FormCrop.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-14T06:23:06.58Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AgIAAM0EAAAAAAAAAAAowPcBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-10T06:05:33.268Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AnnotationForm.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\AnnotationForm.cs",
+              "RelativeDocumentMoniker": "AnnotationForm.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AppFixPicture\\AnnotationForm.cs [Design]",
+              "RelativeToolTip": "..\\..\\AppFixPicture\\AnnotationForm.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-22T02:40:36.035Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP\\AppFixPicture\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAACAAAAAAAAAAAABRwCMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T06:51:55.796Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "ProjectService.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP.BLL\\AFP.BLL\\Services\\ProjectService.cs",
+              "RelativeDocumentMoniker": "..\\..\\AFP.BLL\\AFP.BLL\\Services\\ProjectService.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP.BLL\\AFP.BLL\\Services\\ProjectService.cs",
+              "RelativeToolTip": "..\\..\\AFP.BLL\\AFP.BLL\\Services\\ProjectService.cs",
+              "ViewState": "AgIAAGMAAAAAAAAAAEBVwGcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T06:01:23.422Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "UnitOfWork.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\UnitOfWork.cs",
+              "RelativeDocumentMoniker": "..\\..\\AFP.DAL\\Repositories\\UnitOfWork.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\UnitOfWork.cs",
+              "RelativeToolTip": "..\\..\\AFP.DAL\\Repositories\\UnitOfWork.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAqwCkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T05:59:20.989Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "IUnitOfWork.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\IUnitOfWork.cs",
+              "RelativeDocumentMoniker": "..\\..\\AFP.DAL\\Repositories\\IUnitOfWork.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\IUnitOfWork.cs",
+              "RelativeToolTip": "..\\..\\AFP.DAL\\Repositories\\IUnitOfWork.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T05:57:10.394Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "IGenericRepository.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\IGenericRepository.cs",
+              "RelativeDocumentMoniker": "..\\..\\AFP.DAL\\Repositories\\IGenericRepository.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\IGenericRepository.cs",
+              "RelativeToolTip": "..\\..\\AFP.DAL\\Repositories\\IGenericRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T05:55:23.761Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "GenericRepository.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\GenericRepository.cs",
+              "RelativeDocumentMoniker": "..\\..\\AFP.DAL\\Repositories\\GenericRepository.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\AFP.DAL\\Repositories\\GenericRepository.cs",
+              "RelativeToolTip": "..\\..\\AFP.DAL\\Repositories\\GenericRepository.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAuwDIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-21T06:00:22.17Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

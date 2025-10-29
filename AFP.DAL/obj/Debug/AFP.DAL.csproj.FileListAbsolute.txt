@@ -1,0 +1,12 @@
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\AFP.DAL.dll.config
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\AFP.DAL.dll
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\AFP.DAL.pdb
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\EntityFramework.dll
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\EntityFramework.xml
+C:\Users\ASUS\source\repos\AFP.DAL\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\ASUS\source\repos\AFP.DAL\obj\Debug\AFP.DAL.csproj.AssemblyReference.cache
+C:\Users\ASUS\source\repos\AFP.DAL\obj\Debug\AFP.DAL.csproj.CoreCompileInputs.cache
+C:\Users\ASUS\source\repos\AFP.DAL\obj\Debug\AFP.DAL.csproj.Up2Date
+C:\Users\ASUS\source\repos\AFP.DAL\obj\Debug\AFP.DAL.dll
+C:\Users\ASUS\source\repos\AFP.DAL\obj\Debug\AFP.DAL.pdb

@@ -1,0 +1,97 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
+using System.Threading.Tasks;
+using AFP.BLL.DTOs;
+using AFP.BLL.Mappers;
+using AFP.DAL.Entities;
+using AFP.DAL.Repositories;
+
+namespace AFP.BLL.Services
+{
+    public class ProjectService : IProjectService
+    {
+        // Thay vì DbContext, chúng ta dùng IUnitOfWork
+        private readonly IUnitOfWork _unitOfWork;
+
+        // 1. Tiêm IUnitOfWork vào Constructor (Dependency Injection)
+        public ProjectService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+        // Trong AFP.BLL/Services/ProjectService.cs
+        public async Task<ProjectDto> GetByIdAsync(int id)
+        {
+            // Sử dụng repository để lấy Entity
+            var entity = await _unitOfWork.Projects.GetByIdAsync(id);
+
+            // Chuyển đổi sang DTO
+            return EntityMapper.ToDto(entity);
+        }
+
+        public async Task<List<ProjectDto>> GetAllAsync()
+        {
+            // 2. Sử dụng Repository thay vì db.Projects trực tiếp
+            var list = await _unitOfWork.Projects.GetAllAsync();
+
+            // Ánh xạ và sắp xếp vẫn giữ nguyên trong BLL
+            return list.Select(EntityMapper.ToDto)
+                       .OrderBy(p => p.DateModified)
+                       .ToList();
+        }
+
+        public async Task<ProjectDto> CreateAsync(ProjectDto dto)
+        {
+            // 3. ToEntity
+            var entity = EntityMapper.ToEntity(dto);
+            // ... Logic nghiệp vụ (gán ngày tháng) vẫn giữ nguyên ...
+
+            // 4. Add qua Repository
+            _unitOfWork.Projects.Add(entity);
+
+            // 5. SaveChanges qua UnitOfWork (Duy nhất)
+            await _unitOfWork.CompleteAsync();
+
+            return EntityMapper.ToDto(entity);
+        }
+
+        // Sửa ProjectService.cs -> UpdateAsync
+        public async Task UpdateAsync(ProjectDto dto)
+        {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+
+            // 1. Lấy Entity đang được UnitOfWork theo dõi
+            var existing = await _unitOfWork.Projects.GetByIdAsync(dto.ProjectID);
+
+            if (existing == null) throw new InvalidOperationException("Project not found.");
+
+            // 2. Cập nhật các thuộc tính từ DTO
+            existing.ProjectName = dto.ProjectName;
+            existing.OriginalFilePath = dto.OriginalFilePath;
+            existing.LastSavedPath = dto.LastSavedPath;
+            existing.DateModified = DateTime.Now; // Logic nghiệp vụ BLL
+
+            // 3. Gọi Update trong Repository (để chắc chắn nếu entity bị detached)
+            _unitOfWork.Projects.Update(existing); // Update chỉ đánh dấu EntityState.Modified
+
+            // 4. Lưu thay đổi (chung cho toàn bộ Unit of Work)
+            await _unitOfWork.CompleteAsync();
+        }
+
+        // Sửa ProjectService.cs -> DeleteAsync
+        public async Task DeleteAsync(int id)
+        {
+            // 1. Lấy Entity
+            var existing = await _unitOfWork.Projects.GetByIdAsync(id);
+
+            if (existing == null) return;
+
+            // 2. Xóa qua Repository
+            _unitOfWork.Projects.Delete(existing);
+
+            // 3. Lưu thay đổi
+            await _unitOfWork.CompleteAsync();
+        }
+    }
+}

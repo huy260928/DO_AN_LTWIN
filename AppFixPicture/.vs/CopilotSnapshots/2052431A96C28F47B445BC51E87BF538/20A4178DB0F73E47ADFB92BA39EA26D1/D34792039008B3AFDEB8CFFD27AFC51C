@@ -1,0 +1,161 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO;
+using System.Diagnostics;
+
+namespace AppFixPicture
+{
+    public partial class frmEditVideo : Form
+    {
+        private TimeSpan startTime = TimeSpan.Zero;
+        private TimeSpan endTime = TimeSpan.Zero;
+        private string currentVideoPath;
+
+        public frmEditVideo()
+        {
+            InitializeComponent();
+
+            // Hook up basic events
+            btnOpen.Click += BtnOpen_Click;
+            btnSetStart.Click += BtnSetStart_Click;
+            btnSetEnd.Click += BtnSetEnd_Click;
+            btnTrim.Click += BtnTrim_Click;
+            btnSaveExport.Click += BtnSaveExport_Click;
+
+            // initialize labels
+            lblStartTime.Text = "Start: 00:00:00";
+            lblEndTime.Text = "End: 00:00:00";
+
+            // ensure webBrowserPlayer DocumentCompleted handler
+            if (webBrowserPlayer != null)
+            {
+                webBrowserPlayer.DocumentCompleted += WebBrowserPlayer_DocumentCompleted;
+            }
+        }
+
+        private void BtnOpen_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Video Files|*.mp4;*.avi;*.wmv;*.mov;*.mkv";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    currentVideoPath = ofd.FileName;
+
+                    // update preview placeholder with filename
+                    if (lblPreviewPlaceholder != null)
+                    {
+                        lblPreviewPlaceholder.Text = Path.GetFileName(currentVideoPath);
+                    }
+
+                    // Try to load video inside embedded web browser using HTML5 video tag
+                    try
+                    {
+                        if (webBrowserPlayer != null)
+                        {
+                            // Build a simple HTML page with video element using file URI
+                            var uri = new Uri(currentVideoPath).AbsoluteUri; // file:///C:/...
+                            string html = $"<!DOCTYPE html><html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"></head><body style='margin:0;padding:0;background:black;'><video id=\"v\" controls style='width:100%;height:100%' src=\"{uri}\'></video></body></html>";
+
+                            webBrowserPlayer.DocumentText = html;
+                            webBrowserPlayer.Visible = true;
+                            if (lblPreviewPlaceholder != null) lblPreviewPlaceholder.Visible = false;
+
+                            // Controls will be enabled in DocumentCompleted when we can read duration if needed
+                        }
+                        else
+                        {
+                            // Fallback: open external player
+                            ProcessStartInfo psi = new ProcessStartInfo(currentVideoPath) { UseShellExecute = true };
+                            Process.Start(psi);
+                            MessageBox.Show($"Selected video and opened with default player: {currentVideoPath}", "Video Opened");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Selected video: {currentVideoPath}. Failed to load embedded player: {ex.Message}\nFalling back to external player.", "Video Opened");
+                        try
+                        {
+                            ProcessStartInfo psi = new ProcessStartInfo(currentVideoPath) { UseShellExecute = true };
+                            Process.Start(psi);
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
+        private void WebBrowserPlayer_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        {
+            // Document fully loaded - nothing to enable (timeline controls removed)
+            // Keep handler to allow future JS interactions if needed
+        }
+
+        private void BtnSetStart_Click(object sender, EventArgs e)
+        {
+            // Prefer to read current time from embedded player
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    object timeObj = webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); return v?v.currentTime.toString():''; })()" });
+                    if (timeObj != null && double.TryParse(timeObj.ToString(), out double secs))
+                    {
+                        startTime = TimeSpan.FromSeconds(secs);
+                        lblStartTime.Text = "Start: " + startTime.ToString("hh\\:mm\\:ss");
+                        return;
+                    }
+                }
+                catch { }
+            }
+
+            // Fallback: set to zero
+            startTime = TimeSpan.Zero;
+            lblStartTime.Text = "Start: " + startTime.ToString("hh\\:mm\\:ss");
+        }
+
+        private void BtnSetEnd_Click(object sender, EventArgs e)
+        {
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    object timeObj = webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); return v?v.currentTime.toString():''; })()" });
+                    if (timeObj != null && double.TryParse(timeObj.ToString(), out double secs))
+                    {
+                        endTime = TimeSpan.FromSeconds(secs);
+                        lblEndTime.Text = "End: " + endTime.ToString("hh\\:mm\\:ss");
+                        return;
+                    }
+                }
+                catch { }
+            }
+
+            endTime = TimeSpan.Zero;
+            lblEndTime.Text = "End: " + endTime.ToString("hh\\:mm\\:ss");
+        }
+
+        private void BtnTrim_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show($"Trim from {startTime} to {endTime} (implement export logic).", "Trim");
+        }
+
+        private void BtnSaveExport_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Save/Export clicked (implement save/export logic).", "Info");
+        }
+
+        private void btnOpen_Click_1(object sender, EventArgs e)
+        {
+            // Keep compatibility with designer-generated click handler
+            BtnOpen_Click(sender, e);
+        }
+    }
+}

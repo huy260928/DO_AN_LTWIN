@@ -1,0 +1,152 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO;
+using System.Diagnostics;
+
+namespace AppFixPicture
+{
+    public partial class frmEditVideo : Form
+    {
+        private TimeSpan startTime = TimeSpan.Zero;
+        private TimeSpan endTime = TimeSpan.Zero;
+        private string currentVideoPath;
+
+        public frmEditVideo()
+        {
+            InitializeComponent();
+
+            // Hook up basic events
+            btnOpen.Click += BtnOpen_Click;
+            btnPlay.Click += BtnPlay_Click;
+            btnPause.Click += BtnPause_Click;
+            btnBackward.Click += BtnBackward_Click;
+            btnForward.Click += BtnForward_Click;
+            btnSetStart.Click += BtnSetStart_Click;
+            btnSetEnd.Click += BtnSetEnd_Click;
+            btnTrim.Click += BtnTrim_Click;
+            btnSaveExport.Click += BtnSaveExport_Click;
+            trackBarTime.Scroll += TrackBarTime_Scroll;
+
+            // initialize labels
+            lblStartTime.Text = "Start: 00:00:00";
+            lblEndTime.Text = "End: 00:00:00";
+
+            // disable playback controls until a video is opened (we don't embed a player)
+            btnPlay.Enabled = false;
+            btnPause.Enabled = false;
+            btnBackward.Enabled = false;
+            btnForward.Enabled = false;
+            trackBarTime.Enabled = false;
+        }
+
+        private void BtnOpen_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Video Files|*.mp4;*.avi;*.wmv;*.mov;*.mkv";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    currentVideoPath = ofd.FileName;
+
+                    // update preview placeholder with filename
+                    if (lblPreviewPlaceholder != null)
+                    {
+                        lblPreviewPlaceholder.Text = Path.GetFileName(currentVideoPath);
+                    }
+
+                    // Try to start the default system player to play the file immediately
+                    try
+                    {
+                        ProcessStartInfo psi = new ProcessStartInfo(currentVideoPath)
+                        {
+                            UseShellExecute = true
+                        };
+                        Process.Start(psi);
+
+                        // enable controls (limited functionality because we don't have embedded player)
+                        btnPlay.Enabled = true;
+                        btnPause.Enabled = true;
+                        btnBackward.Enabled = true;
+                        btnForward.Enabled = true;
+                        trackBarTime.Enabled = true;
+
+                        MessageBox.Show($"Selected video and opened with default player: {currentVideoPath}", "Video Opened");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Selected video: {currentVideoPath}. Failed to launch external player: {ex.Message}", "Video Opened");
+                    }
+                }
+            }
+        }
+
+        private void BtnPlay_Click(object sender, EventArgs e)
+        {
+            // We don't have an embedded player; show info
+            if (string.IsNullOrEmpty(currentVideoPath))
+            {
+                MessageBox.Show("No video loaded. Use Open Video first.", "Info");
+                return;
+            }
+            MessageBox.Show("Playback is handled by external player. Use the external player's controls.", "Info");
+        }
+
+        private void BtnPause_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Pause is not available for external playback.", "Info");
+        }
+
+        private void BtnBackward_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Backward/seek is not available without an embedded player.", "Info");
+        }
+
+        private void BtnForward_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Forward/seek is not available without an embedded player.", "Info");
+        }
+
+        private void BtnSetStart_Click(object sender, EventArgs e)
+        {
+            // For demo: set start to trackbar value (assuming trackBar max = seconds)
+            startTime = TimeSpan.FromSeconds(trackBarTime.Value);
+            lblStartTime.Text = "Start: " + startTime.ToString("hh\\:mm\\:ss");
+        }
+
+        private void BtnSetEnd_Click(object sender, EventArgs e)
+        {
+            endTime = TimeSpan.FromSeconds(trackBarTime.Value);
+            lblEndTime.Text = "End: " + endTime.ToString("hh\\:mm\\:ss");
+        }
+
+        private void BtnTrim_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show($"Trim from {startTime} to {endTime} (implement export logic).", "Trim");
+        }
+
+        private void BtnSaveExport_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Save/Export clicked (implement save/export logic).", "Info");
+        }
+
+        private void TrackBarTime_Scroll(object sender, EventArgs e)
+        {
+            // Update preview time label or other UI if needed
+            // For demo, update form title with seconds
+            this.Text = $"Video Editor - Position: {trackBarTime.Value}s";
+        }
+
+        private void btnOpen_Click_1(object sender, EventArgs e)
+        {
+            // Keep compatibility with designer-generated click handler
+            BtnOpen_Click(sender, e);
+        }
+    }
+}

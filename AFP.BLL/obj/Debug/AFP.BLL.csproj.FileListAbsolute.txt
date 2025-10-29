@@ -1,0 +1,15 @@
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\AFP.BLL.dll.config
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\AFP.BLL.dll
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\AFP.BLL.pdb
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\AFP.DAL.dll
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\EntityFramework.dll
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\AFP.DAL.pdb
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\AFP.DAL.dll.config
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\EntityFramework.xml
+C:\Users\ASUS\source\repos\AFP.BLL\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\ASUS\source\repos\AFP.BLL\obj\Debug\AFP.BLL.csproj.AssemblyReference.cache
+C:\Users\ASUS\source\repos\AFP.BLL\obj\Debug\AFP.BLL.csproj.CoreCompileInputs.cache
+C:\Users\ASUS\source\repos\AFP.BLL\obj\Debug\AFP.BLL.csproj.Up2Date
+C:\Users\ASUS\source\repos\AFP.BLL\obj\Debug\AFP.BLL.dll
+C:\Users\ASUS\source\repos\AFP.BLL\obj\Debug\AFP.BLL.pdb

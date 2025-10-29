@@ -1,0 +1,306 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO;
+using System.Diagnostics;
+
+namespace AppFixPicture
+{
+    public partial class frmEditVideo : Form
+    {
+        private TimeSpan startTime = TimeSpan.Zero;
+        private TimeSpan endTime = TimeSpan.Zero;
+        private string currentVideoPath;
+
+        public frmEditVideo()
+        {
+            InitializeComponent();
+
+            // Hook up basic events
+            btnOpen.Click += BtnOpen_Click;
+            btnPlay.Click += BtnPlay_Click;
+            btnPause.Click += BtnPause_Click;
+            btnBackward.Click += BtnBackward_Click;
+            btnForward.Click += BtnForward_Click;
+            btnSetStart.Click += BtnSetStart_Click;
+            btnSetEnd.Click += BtnSetEnd_Click;
+            btnTrim.Click += BtnTrim_Click;
+            btnSaveExport.Click += BtnSaveExport_Click;
+            trackBarTime.Scroll += TrackBarTime_Scroll;
+
+            // initialize labels
+            lblStartTime.Text = "Start: 00:00:00";
+            lblEndTime.Text = "End: 00:00:00";
+
+            // disable playback controls until a video is opened
+            btnPlay.Enabled = false;
+            btnPause.Enabled = false;
+            btnBackward.Enabled = false;
+            btnForward.Enabled = false;
+            trackBarTime.Enabled = false;
+
+            // ensure webBrowserPlayer DocumentCompleted handler
+            if (webBrowserPlayer != null)
+            {
+                webBrowserPlayer.DocumentCompleted += WebBrowserPlayer_DocumentCompleted;
+                webBrowserPlayer.ScriptErrorsSuppressed = true;
+                webBrowserPlayer.AllowNavigation = true;
+            }
+        }
+
+        private void BtnOpen_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Video Files|*.mp4;*.avi;*.wmv;*.mov;*.mkv";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    currentVideoPath = ofd.FileName;
+
+                    // update preview placeholder with filename
+                    if (lblPreviewPlaceholder != null)
+                    {
+                        lblPreviewPlaceholder.Text = Path.GetFileName(currentVideoPath);
+                    }
+
+                    // Try to load video inside embedded web browser using HTML5 video tag
+                    try
+                    {
+                        if (webBrowserPlayer != null)
+                        {
+                            // Build a simple HTML page with video element using file URI
+                            var uri = new Uri(currentVideoPath).AbsoluteUri; // file:///C:/...
+                            string html = $"<!DOCTYPE html><html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"></head><body style='margin:0;padding:0;background:black;'><video id=\"v\" controls style='width:100%;height:100%;' src=\"{uri}\"></video></body></html>";
+
+                            // Set the HTML into the browser. If the browser doesn't support HTML5 video for the file/codec,
+                            // it may not play; in that case we fall back to direct navigation to the file (which may invoke the system handler inside the control).
+                            webBrowserPlayer.DocumentText = html;
+                            webBrowserPlayer.Visible = true;
+                            if (lblPreviewPlaceholder != null) lblPreviewPlaceholder.Visible = false;
+
+                            // Controls will be enabled in DocumentCompleted when we can read duration
+                            // Also try to navigate directly as a fallback
+                            try
+                            {
+                                webBrowserPlayer.Navigate(uri);
+                            }
+                            catch { }
+
+                            // Controls will be enabled in DocumentCompleted when we can read duration if needed
+                        }
+                        else
+                        {
+                            // Fallback: open external player
+                            ProcessStartInfo psi = new ProcessStartInfo(currentVideoPath) { UseShellExecute = true };
+                            Process.Start(psi);
+                            MessageBox.Show($"Selected video and opened with default player: {currentVideoPath}", "Video Opened");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Selected video: {currentVideoPath}. Failed to load embedded player: {ex.Message}\nFalling back to external player.", "Video Opened");
+                        try
+                        {
+                            ProcessStartInfo psi = new ProcessStartInfo(currentVideoPath) { UseShellExecute = true };
+                            Process.Start(psi);
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
+        private void WebBrowserPlayer_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        {
+            try
+            {
+                // try to read duration and enable controls
+                if (webBrowserPlayer.Document != null)
+                {
+                    // Try to get duration via JS evaluation
+                    object durObj = webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); return v?v.duration.toString():''; })()" });
+                    double dur = 0;
+                    if (durObj != null && double.TryParse(durObj.ToString(), out dur) && dur > 0)
+                    {
+                        // set trackBar max to seconds (rounded)
+                        try
+                        {
+                            trackBarTime.Maximum = (int)Math.Ceiling(dur);
+                            trackBarTime.Value = 0;
+                        }
+                        catch { }
+                    }
+
+                    // enable controls
+                    btnPlay.Enabled = true;
+                    btnPause.Enabled = true;
+                    btnBackward.Enabled = true;
+                    btnForward.Enabled = true;
+                    trackBarTime.Enabled = true;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+            // Document fully loaded - nothing to enable (timeline controls removed)
+            // Keep handler to allow future JS interactions if needed
+        }
+
+        private void BtnPlay_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(currentVideoPath) && webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    var video = webBrowserPlayer.Document.GetElementById("v");
+                    video?.InvokeMember("play");
+                    return;
+                }
+                catch { }
+            }
+
+            MessageBox.Show("Playback is handled by external player. Use the external player's controls.", "Info");
+        }
+
+        private void BtnPause_Click(object sender, EventArgs e)
+        {
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    var video = webBrowserPlayer.Document.GetElementById("v");
+                    video?.InvokeMember("pause");
+                    return;
+                }
+                catch { }
+            }
+
+            MessageBox.Show("Pause is not available for external playback.", "Info");
+        }
+
+        private void BtnBackward_Click(object sender, EventArgs e)
+        {
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    // Seek back 5 seconds
+                    webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); if(v) v.currentTime = Math.max(0, v.currentTime - 5); })()" });
+                    return;
+                }
+                catch { }
+            }
+
+            MessageBox.Show("Backward/seek is not available without an embedded player.", "Info");
+        }
+
+        private void BtnForward_Click(object sender, EventArgs e)
+        {
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    // Seek forward 5 seconds
+                    webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); if(v) v.currentTime = Math.min(v.duration, v.currentTime + 5); })()" });
+                    return;
+                }
+                catch { }
+            }
+
+            MessageBox.Show("Forward/seek is not available without an embedded player.", "Info");
+        }
+
+        private void BtnSetStart_Click(object sender, EventArgs e)
+        {
+            // Prefer to read current time from embedded player
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    object timeObj = webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); return v?v.currentTime.toString():''; })()" });
+                    if (timeObj != null && double.TryParse(timeObj.ToString(), out double secs))
+                    {
+                        startTime = TimeSpan.FromSeconds(secs);
+                        lblStartTime.Text = "Start: " + startTime.ToString("hh\\:mm\\:ss");
+                        return;
+                    }
+                }
+                catch { }
+            }
+
+            // Fallback: use trackBar value
+            if (trackBarTime.Enabled)
+            {
+                startTime = TimeSpan.FromSeconds(trackBarTime.Value);
+            }
+            // Ensure no redundant assignment
+            else
+            {
+                startTime = TimeSpan.Zero;
+            }
+            lblStartTime.Text = "Start: " + startTime.ToString("hh\\:mm\\:ss");
+        }
+
+        private void BtnSetEnd_Click(object sender, EventArgs e)
+        {
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    object timeObj = webBrowserPlayer.Document.InvokeScript("eval", new object[] { "(function(){ var v=document.getElementById('v'); return v?v.currentTime.toString():''; })()" });
+                    if (timeObj != null && double.TryParse(timeObj.ToString(), out double secs))
+                    {
+                        endTime = TimeSpan.FromSeconds(secs);
+                        lblEndTime.Text = "End: " + endTime.ToString("hh\\:mm\\:ss");
+                        return;
+                    }
+                }
+                catch { }
+            }
+
+            endTime = TimeSpan.FromSeconds(trackBarTime.Value);
+            endTime = TimeSpan.Zero;
+            lblEndTime.Text = "End: " + endTime.ToString("hh\\:mm\\:ss");
+        }
+
+        private void BtnTrim_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show($"Trim from {startTime} to {endTime} (implement export logic).", "Trim");
+        }
+
+        private void BtnSaveExport_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Save/Export clicked (implement save/export logic).", "Info");
+        }
+
+        private void TrackBarTime_Scroll(object sender, EventArgs e)
+        {
+            // Update preview time label or other UI if needed
+            // For demo, update form title with seconds
+            this.Text = $"Video Editor - Position: {trackBarTime.Value}s";
+
+            // If embedded, seek to that second
+            if (webBrowserPlayer != null && webBrowserPlayer.Document != null)
+            {
+                try
+                {
+                    webBrowserPlayer.Document.InvokeScript("eval", new object[] { $"(function(){{ var v=document.getElementById('v'); if(v) v.currentTime = {trackBarTime.Value}; }})()" });
+                }
+                catch { }
+            }
+        }
+
+        private void btnOpen_Click_1(object sender, EventArgs e)
+        {
+            // Keep compatibility with designer-generated click handler
+            BtnOpen_Click(sender, e);
+        }
+    }
+}

@@ -1,0 +1,786 @@
+﻿namespace AppFixPicture
+{
+    partial class Form1
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        // *protected override void Dispose(bool disposing)
+        //{
+        //    if (disposing && (components != null))
+        //    {
+        //        components.Dispose();
+        //    }
+        //    base.Dispose(disposing);
+        //}*
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.imageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cropToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.rotateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.videoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.openToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.playToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.btnFullScreen = new System.Windows.Forms.Button();
+            this.btnRotateLeft = new System.Windows.Forms.Button();
+            this.btnRotateRight = new System.Windows.Forms.Button();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnGrayscale = new System.Windows.Forms.Button();
+            this.btnCoolEffect = new System.Windows.Forms.Button();
+            this.btnOriginal = new System.Windows.Forms.Button();
+            this.btnNatureEffect = new System.Windows.Forms.Button();
+            this.btnWarmEffect = new System.Windows.Forms.Button();
+            this.btnFadedEffect = new System.Windows.Forms.Button();
+            this.btnTextureEffect = new System.Windows.Forms.Button();
+            this.btnWhiteEffect = new System.Windows.Forms.Button();
+            this.btnVivid = new System.Windows.Forms.Button();
+            this.btnCream = new System.Windows.Forms.Button();
+            this.btnTasty = new System.Windows.Forms.Button();
+            this.btnPicnic = new System.Windows.Forms.Button();
+            this.btnSeaEffect = new System.Windows.Forms.Button();
+            this.btnAutumnEffect = new System.Windows.Forms.Button();
+            this.btnSunlightEffect = new System.Windows.Forms.Button();
+            this.btnParadiseEffect = new System.Windows.Forms.Button();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.btnResetHue = new System.Windows.Forms.Button();
+            this.lblHueValue = new System.Windows.Forms.Label();
+            this.trackBarHue = new System.Windows.Forms.TrackBar();
+            this.btnResetTemperature = new System.Windows.Forms.Button();
+            this.lblTemperatureValue = new System.Windows.Forms.Label();
+            this.trackBarTemperature = new System.Windows.Forms.TrackBar();
+            this.btnSaturation = new System.Windows.Forms.Button();
+            this.lblSaturationValue = new System.Windows.Forms.Label();
+            this.trackBarSaturation = new System.Windows.Forms.TrackBar();
+            this.btnResetContrast = new System.Windows.Forms.Button();
+            this.btnResetBrightness = new System.Windows.Forms.Button();
+            this.trackBarContrast = new System.Windows.Forms.TrackBar();
+            this.trackBarBrightness = new System.Windows.Forms.TrackBar();
+            this.lblBrightnessValue = new System.Windows.Forms.Label();
+            this.lblContrastValue = new System.Windows.Forms.Label();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnDeleteImage = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
+            this.groupBox3.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarHue)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarTemperature)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarSaturation)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarContrast)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarBrightness)).BeginInit();
+            this.groupBox1.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // menuStrip1
+            // 
+            this.menuStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem,
+            this.imageToolStripMenuItem,
+            this.videoToolStripMenuItem,
+            this.helpToolStripMenuItem,
+            this.toolStripMenuItem1});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(1227, 28);
+            this.menuStrip1.TabIndex = 0;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openToolStripMenuItem,
+            this.saveToolStripMenuItem,
+            this.exitToolStripMenuItem});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 24);
+            this.fileToolStripMenuItem.Text = "File";
+            // 
+            // openToolStripMenuItem
+            // 
+            this.openToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("openToolStripMenuItem.Image")));
+            this.openToolStripMenuItem.Name = "openToolStripMenuItem";
+            this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
+            this.openToolStripMenuItem.Text = "Open";
+            this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
+            // 
+            // saveToolStripMenuItem
+            // 
+            this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
+            this.saveToolStripMenuItem.Text = "Save";
+            this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
+            // 
+            // exitToolStripMenuItem
+            // 
+            this.exitToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("exitToolStripMenuItem.Image")));
+            this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            this.exitToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.E)));
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
+            this.exitToolStripMenuItem.Text = "Exit";
+            this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            // 
+            // imageToolStripMenuItem
+            // 
+            this.imageToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.cropToolStripMenuItem,
+            this.rotateToolStripMenuItem});
+            this.imageToolStripMenuItem.Name = "imageToolStripMenuItem";
+            this.imageToolStripMenuItem.Size = new System.Drawing.Size(65, 24);
+            this.imageToolStripMenuItem.Text = "Image";
+            // 
+            // cropToolStripMenuItem
+            // 
+            this.cropToolStripMenuItem.Name = "cropToolStripMenuItem";
+            this.cropToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C)));
+            this.cropToolStripMenuItem.Size = new System.Drawing.Size(175, 26);
+            this.cropToolStripMenuItem.Text = "Crop";
+            this.cropToolStripMenuItem.Click += new System.EventHandler(this.cropToolStripMenuItem_Click);
+            // 
+            // rotateToolStripMenuItem
+            // 
+            this.rotateToolStripMenuItem.Name = "rotateToolStripMenuItem";
+            this.rotateToolStripMenuItem.Size = new System.Drawing.Size(175, 26);
+            this.rotateToolStripMenuItem.Text = "Annotation";
+            // 
+            // videoToolStripMenuItem
+            // 
+            this.videoToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openToolStripMenuItem1,
+            this.playToolStripMenuItem,
+            this.cutToolStripMenuItem});
+            this.videoToolStripMenuItem.Name = "videoToolStripMenuItem";
+            this.videoToolStripMenuItem.Size = new System.Drawing.Size(62, 24);
+            this.videoToolStripMenuItem.Text = "Video";
+            // 
+            // openToolStripMenuItem1
+            // 
+            this.openToolStripMenuItem1.Name = "openToolStripMenuItem1";
+            this.openToolStripMenuItem1.Size = new System.Drawing.Size(128, 26);
+            this.openToolStripMenuItem1.Text = "Open";
+            this.openToolStripMenuItem1.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
+            // 
+            // playToolStripMenuItem
+            // 
+            this.playToolStripMenuItem.Name = "playToolStripMenuItem";
+            this.playToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
+            this.playToolStripMenuItem.Text = "Play";
+            // 
+            // cutToolStripMenuItem
+            // 
+            this.cutToolStripMenuItem.Name = "cutToolStripMenuItem";
+            this.cutToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
+            this.cutToolStripMenuItem.Text = "Cut";
+            // 
+            // helpToolStripMenuItem
+            // 
+            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(55, 24);
+            this.helpToolStripMenuItem.Text = "Help";
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(27, 24);
+            this.toolStripMenuItem1.Text = " ";
+            // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pictureBox1.Location = new System.Drawing.Point(0, 0);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(728, 697);
+            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureBox1.TabIndex = 1;
+            this.pictureBox1.TabStop = false;
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
+            this.pictureBox1.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox1_Paint);
+            this.pictureBox1.DoubleClick += new System.EventHandler(this.pictureBox1_DoubleClick);
+            this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
+            this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
+            this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
+            // 
+            // btnFullScreen
+            // 
+            this.btnFullScreen.Image = ((System.Drawing.Image)(resources.GetObject("btnFullScreen.Image")));
+            this.btnFullScreen.Location = new System.Drawing.Point(6, 21);
+            this.btnFullScreen.Name = "btnFullScreen";
+            this.btnFullScreen.Size = new System.Drawing.Size(40, 40);
+            this.btnFullScreen.TabIndex = 0;
+            this.btnFullScreen.UseVisualStyleBackColor = true;
+            this.btnFullScreen.Click += new System.EventHandler(this.btnFullScreen_Click);
+            // 
+            // btnRotateLeft
+            // 
+            this.btnRotateLeft.Image = ((System.Drawing.Image)(resources.GetObject("btnRotateLeft.Image")));
+            this.btnRotateLeft.Location = new System.Drawing.Point(52, 21);
+            this.btnRotateLeft.Name = "btnRotateLeft";
+            this.btnRotateLeft.Size = new System.Drawing.Size(40, 40);
+            this.btnRotateLeft.TabIndex = 2;
+            this.btnRotateLeft.UseVisualStyleBackColor = true;
+            this.btnRotateLeft.Click += new System.EventHandler(this.btnRotateLeft_Click);
+            // 
+            // btnRotateRight
+            // 
+            this.btnRotateRight.Image = ((System.Drawing.Image)(resources.GetObject("btnRotateRight.Image")));
+            this.btnRotateRight.Location = new System.Drawing.Point(98, 21);
+            this.btnRotateRight.Name = "btnRotateRight";
+            this.btnRotateRight.Size = new System.Drawing.Size(40, 40);
+            this.btnRotateRight.TabIndex = 3;
+            this.btnRotateRight.UseVisualStyleBackColor = true;
+            this.btnRotateRight.Click += new System.EventHandler(this.btnRotateRight_Click);
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.splitContainer1.Location = new System.Drawing.Point(28, 48);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.groupBox3);
+            this.splitContainer1.Panel1.Controls.Add(this.groupBox2);
+            this.splitContainer1.Panel1.Controls.Add(this.groupBox1);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.pictureBox1);
+            this.splitContainer1.Size = new System.Drawing.Size(1162, 697);
+            this.splitContainer1.SplitterDistance = 430;
+            this.splitContainer1.TabIndex = 4;
+            // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.flowLayoutPanel1);
+            this.groupBox3.Location = new System.Drawing.Point(25, 364);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Size = new System.Drawing.Size(304, 301);
+            this.groupBox3.TabIndex = 10;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "Filters";
+            // 
+            // flowLayoutPanel1
+            // 
+            this.flowLayoutPanel1.AutoScroll = true;
+            this.flowLayoutPanel1.Controls.Add(this.btnGrayscale);
+            this.flowLayoutPanel1.Controls.Add(this.btnCoolEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnOriginal);
+            this.flowLayoutPanel1.Controls.Add(this.btnNatureEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnWarmEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnFadedEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnTextureEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnWhiteEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnVivid);
+            this.flowLayoutPanel1.Controls.Add(this.btnCream);
+            this.flowLayoutPanel1.Controls.Add(this.btnTasty);
+            this.flowLayoutPanel1.Controls.Add(this.btnPicnic);
+            this.flowLayoutPanel1.Controls.Add(this.btnSeaEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnAutumnEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnSunlightEffect);
+            this.flowLayoutPanel1.Controls.Add(this.btnParadiseEffect);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(13, 32);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(285, 246);
+            this.flowLayoutPanel1.TabIndex = 8;
+            // 
+            // btnGrayscale
+            // 
+            this.btnGrayscale.Image = ((System.Drawing.Image)(resources.GetObject("btnGrayscale.Image")));
+            this.btnGrayscale.Location = new System.Drawing.Point(3, 3);
+            this.btnGrayscale.Name = "btnGrayscale";
+            this.btnGrayscale.Size = new System.Drawing.Size(60, 60);
+            this.btnGrayscale.TabIndex = 0;
+            this.btnGrayscale.UseVisualStyleBackColor = true;
+            this.btnGrayscale.Click += new System.EventHandler(this.btnGrayscale_Click);
+            // 
+            // btnCoolEffect
+            // 
+            this.btnCoolEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnCoolEffect.Image")));
+            this.btnCoolEffect.Location = new System.Drawing.Point(69, 3);
+            this.btnCoolEffect.Name = "btnCoolEffect";
+            this.btnCoolEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnCoolEffect.TabIndex = 1;
+            this.btnCoolEffect.UseVisualStyleBackColor = true;
+            this.btnCoolEffect.Click += new System.EventHandler(this.btnCoolEffect_Click);
+            // 
+            // btnOriginal
+            // 
+            this.btnOriginal.Image = ((System.Drawing.Image)(resources.GetObject("btnOriginal.Image")));
+            this.btnOriginal.Location = new System.Drawing.Point(135, 3);
+            this.btnOriginal.Name = "btnOriginal";
+            this.btnOriginal.Size = new System.Drawing.Size(60, 60);
+            this.btnOriginal.TabIndex = 2;
+            this.btnOriginal.UseVisualStyleBackColor = true;
+            this.btnOriginal.Click += new System.EventHandler(this.btnOriginal_Click);
+            // 
+            // btnNatureEffect
+            // 
+            this.btnNatureEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnNatureEffect.Image")));
+            this.btnNatureEffect.Location = new System.Drawing.Point(201, 3);
+            this.btnNatureEffect.Name = "btnNatureEffect";
+            this.btnNatureEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnNatureEffect.TabIndex = 3;
+            this.btnNatureEffect.UseVisualStyleBackColor = true;
+            this.btnNatureEffect.Click += new System.EventHandler(this.btnNatureEffect_Click);
+            // 
+            // btnWarmEffect
+            // 
+            this.btnWarmEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnWarmEffect.Image")));
+            this.btnWarmEffect.Location = new System.Drawing.Point(3, 69);
+            this.btnWarmEffect.Name = "btnWarmEffect";
+            this.btnWarmEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnWarmEffect.TabIndex = 4;
+            this.btnWarmEffect.UseVisualStyleBackColor = true;
+            this.btnWarmEffect.Click += new System.EventHandler(this.btnWarmEffect_Click);
+            // 
+            // btnFadedEffect
+            // 
+            this.btnFadedEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnFadedEffect.Image")));
+            this.btnFadedEffect.Location = new System.Drawing.Point(69, 69);
+            this.btnFadedEffect.Name = "btnFadedEffect";
+            this.btnFadedEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnFadedEffect.TabIndex = 5;
+            this.btnFadedEffect.UseVisualStyleBackColor = true;
+            this.btnFadedEffect.Click += new System.EventHandler(this.btnFadedEffect_Click);
+            // 
+            // btnTextureEffect
+            // 
+            this.btnTextureEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnTextureEffect.Image")));
+            this.btnTextureEffect.Location = new System.Drawing.Point(135, 69);
+            this.btnTextureEffect.Name = "btnTextureEffect";
+            this.btnTextureEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnTextureEffect.TabIndex = 6;
+            this.btnTextureEffect.UseVisualStyleBackColor = true;
+            this.btnTextureEffect.Click += new System.EventHandler(this.btnTextureEffect_Click);
+            // 
+            // btnWhiteEffect
+            // 
+            this.btnWhiteEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnWhiteEffect.Image")));
+            this.btnWhiteEffect.Location = new System.Drawing.Point(201, 69);
+            this.btnWhiteEffect.Name = "btnWhiteEffect";
+            this.btnWhiteEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnWhiteEffect.TabIndex = 7;
+            this.btnWhiteEffect.UseVisualStyleBackColor = true;
+            this.btnWhiteEffect.Click += new System.EventHandler(this.btnWhiteEffect_Click);
+            // 
+            // btnVivid
+            // 
+            this.btnVivid.Image = ((System.Drawing.Image)(resources.GetObject("btnVivid.Image")));
+            this.btnVivid.Location = new System.Drawing.Point(3, 135);
+            this.btnVivid.Name = "btnVivid";
+            this.btnVivid.Size = new System.Drawing.Size(60, 60);
+            this.btnVivid.TabIndex = 11;
+            this.btnVivid.UseVisualStyleBackColor = true;
+            this.btnVivid.Click += new System.EventHandler(this.btnVivid_Click);
+            // 
+            // btnCream
+            // 
+            this.btnCream.Image = ((System.Drawing.Image)(resources.GetObject("btnCream.Image")));
+            this.btnCream.Location = new System.Drawing.Point(69, 135);
+            this.btnCream.Name = "btnCream";
+            this.btnCream.Size = new System.Drawing.Size(60, 60);
+            this.btnCream.TabIndex = 12;
+            this.btnCream.UseVisualStyleBackColor = true;
+            this.btnCream.Click += new System.EventHandler(this.btnCream_Click);
+            // 
+            // btnTasty
+            // 
+            this.btnTasty.Image = ((System.Drawing.Image)(resources.GetObject("btnTasty.Image")));
+            this.btnTasty.Location = new System.Drawing.Point(135, 135);
+            this.btnTasty.Name = "btnTasty";
+            this.btnTasty.Size = new System.Drawing.Size(60, 60);
+            this.btnTasty.TabIndex = 13;
+            this.btnTasty.UseVisualStyleBackColor = true;
+            this.btnTasty.Click += new System.EventHandler(this.btnTasty_Click);
+            // 
+            // btnPicnic
+            // 
+            this.btnPicnic.Image = ((System.Drawing.Image)(resources.GetObject("btnPicnic.Image")));
+            this.btnPicnic.Location = new System.Drawing.Point(201, 135);
+            this.btnPicnic.Name = "btnPicnic";
+            this.btnPicnic.Size = new System.Drawing.Size(60, 60);
+            this.btnPicnic.TabIndex = 14;
+            this.btnPicnic.UseVisualStyleBackColor = true;
+            this.btnPicnic.Click += new System.EventHandler(this.btnPicnic_Click);
+            // 
+            // btnSeaEffect
+            // 
+            this.btnSeaEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnSeaEffect.Image")));
+            this.btnSeaEffect.Location = new System.Drawing.Point(3, 201);
+            this.btnSeaEffect.Name = "btnSeaEffect";
+            this.btnSeaEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnSeaEffect.TabIndex = 1;
+            this.btnSeaEffect.UseVisualStyleBackColor = true;
+            this.btnSeaEffect.Click += new System.EventHandler(this.btnSeaEffect_Click);
+            // 
+            // btnAutumnEffect
+            // 
+            this.btnAutumnEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnAutumnEffect.Image")));
+            this.btnAutumnEffect.Location = new System.Drawing.Point(69, 201);
+            this.btnAutumnEffect.Name = "btnAutumnEffect";
+            this.btnAutumnEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnAutumnEffect.TabIndex = 3;
+            this.btnAutumnEffect.UseVisualStyleBackColor = true;
+            this.btnAutumnEffect.Click += new System.EventHandler(this.btnAutumnEffect_Click);
+            // 
+            // btnSunlightEffect
+            // 
+            this.btnSunlightEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnSunlightEffect.Image")));
+            this.btnSunlightEffect.Location = new System.Drawing.Point(135, 201);
+            this.btnSunlightEffect.Name = "btnSunlightEffect";
+            this.btnSunlightEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnSunlightEffect.TabIndex = 2;
+            this.btnSunlightEffect.UseVisualStyleBackColor = true;
+            this.btnSunlightEffect.Click += new System.EventHandler(this.btnSunlightEffect_Click);
+            // 
+            // btnParadiseEffect
+            // 
+            this.btnParadiseEffect.Image = ((System.Drawing.Image)(resources.GetObject("btnParadiseEffect.Image")));
+            this.btnParadiseEffect.Location = new System.Drawing.Point(201, 201);
+            this.btnParadiseEffect.Name = "btnParadiseEffect";
+            this.btnParadiseEffect.Size = new System.Drawing.Size(60, 60);
+            this.btnParadiseEffect.TabIndex = 4;
+            this.btnParadiseEffect.UseVisualStyleBackColor = true;
+            this.btnParadiseEffect.Click += new System.EventHandler(this.btnParadiseEffect_Click);
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.btnResetHue);
+            this.groupBox2.Controls.Add(this.lblHueValue);
+            this.groupBox2.Controls.Add(this.trackBarHue);
+            this.groupBox2.Controls.Add(this.btnResetTemperature);
+            this.groupBox2.Controls.Add(this.lblTemperatureValue);
+            this.groupBox2.Controls.Add(this.trackBarTemperature);
+            this.groupBox2.Controls.Add(this.btnSaturation);
+            this.groupBox2.Controls.Add(this.lblSaturationValue);
+            this.groupBox2.Controls.Add(this.trackBarSaturation);
+            this.groupBox2.Controls.Add(this.btnResetContrast);
+            this.groupBox2.Controls.Add(this.btnResetBrightness);
+            this.groupBox2.Controls.Add(this.trackBarContrast);
+            this.groupBox2.Controls.Add(this.trackBarBrightness);
+            this.groupBox2.Controls.Add(this.lblBrightnessValue);
+            this.groupBox2.Controls.Add(this.lblContrastValue);
+            this.groupBox2.Location = new System.Drawing.Point(25, 98);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(400, 260);
+            this.groupBox2.TabIndex = 9;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Chỉnh Màu";
+            // 
+            // btnResetHue
+            // 
+            this.btnResetHue.Location = new System.Drawing.Point(17, 196);
+            this.btnResetHue.Name = "btnResetHue";
+            this.btnResetHue.Size = new System.Drawing.Size(75, 23);
+            this.btnResetHue.TabIndex = 18;
+            this.btnResetHue.Text = "Reset";
+            this.btnResetHue.UseVisualStyleBackColor = true;
+            this.btnResetHue.Click += new System.EventHandler(this.btnResetHue_Click);
+            // 
+            // lblHueValue
+            // 
+            this.lblHueValue.AutoSize = true;
+            this.lblHueValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblHueValue.Location = new System.Drawing.Point(218, 196);
+            this.lblHueValue.Name = "lblHueValue";
+            this.lblHueValue.Size = new System.Drawing.Size(102, 20);
+            this.lblHueValue.TabIndex = 17;
+            this.lblHueValue.Text = "Tông màu: 0";
+            // 
+            // trackBarHue
+            // 
+            this.trackBarHue.Location = new System.Drawing.Point(108, 196);
+            this.trackBarHue.Maximum = 180;
+            this.trackBarHue.Minimum = -180;
+            this.trackBarHue.Name = "trackBarHue";
+            this.trackBarHue.Size = new System.Drawing.Size(104, 56);
+            this.trackBarHue.TabIndex = 16;
+            this.trackBarHue.TickFrequency = 10;
+            this.trackBarHue.Scroll += new System.EventHandler(this.trackBarHue_Scroll);
+            // 
+            // btnResetTemperature
+            // 
+            this.btnResetTemperature.Location = new System.Drawing.Point(17, 152);
+            this.btnResetTemperature.Name = "btnResetTemperature";
+            this.btnResetTemperature.Size = new System.Drawing.Size(75, 23);
+            this.btnResetTemperature.TabIndex = 15;
+            this.btnResetTemperature.Text = "Reset";
+            this.btnResetTemperature.UseVisualStyleBackColor = true;
+            // 
+            // lblTemperatureValue
+            // 
+            this.lblTemperatureValue.AutoSize = true;
+            this.lblTemperatureValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTemperatureValue.Location = new System.Drawing.Point(218, 152);
+            this.lblTemperatureValue.Name = "lblTemperatureValue";
+            this.lblTemperatureValue.Size = new System.Drawing.Size(127, 20);
+            this.lblTemperatureValue.TabIndex = 14;
+            this.lblTemperatureValue.Text = "Nhiệt độ màu: 0";
+            // 
+            // trackBarTemperature
+            // 
+            this.trackBarTemperature.Location = new System.Drawing.Point(108, 152);
+            this.trackBarTemperature.Maximum = 100;
+            this.trackBarTemperature.Minimum = -100;
+            this.trackBarTemperature.Name = "trackBarTemperature";
+            this.trackBarTemperature.Size = new System.Drawing.Size(104, 56);
+            this.trackBarTemperature.TabIndex = 13;
+            this.trackBarTemperature.TickFrequency = 10;
+            this.trackBarTemperature.Scroll += new System.EventHandler(this.trackBarTemperature_Scroll);
+            // 
+            // btnSaturation
+            // 
+            this.btnSaturation.Location = new System.Drawing.Point(17, 108);
+            this.btnSaturation.Name = "btnSaturation";
+            this.btnSaturation.Size = new System.Drawing.Size(75, 23);
+            this.btnSaturation.TabIndex = 12;
+            this.btnSaturation.Text = "Reset";
+            this.btnSaturation.UseVisualStyleBackColor = true;
+            this.btnSaturation.Click += new System.EventHandler(this.btnSaturation_Click);
+            // 
+            // lblSaturationValue
+            // 
+            this.lblSaturationValue.AutoSize = true;
+            this.lblSaturationValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSaturationValue.Location = new System.Drawing.Point(218, 111);
+            this.lblSaturationValue.Name = "lblSaturationValue";
+            this.lblSaturationValue.Size = new System.Drawing.Size(113, 20);
+            this.lblSaturationValue.TabIndex = 11;
+            this.lblSaturationValue.Text = "Độ bão hòa: 0";
+            // 
+            // trackBarSaturation
+            // 
+            this.trackBarSaturation.Location = new System.Drawing.Point(108, 108);
+            this.trackBarSaturation.Maximum = 200;
+            this.trackBarSaturation.Name = "trackBarSaturation";
+            this.trackBarSaturation.Size = new System.Drawing.Size(104, 56);
+            this.trackBarSaturation.TabIndex = 10;
+            this.trackBarSaturation.TickFrequency = 10;
+            this.trackBarSaturation.Value = 100;
+            this.trackBarSaturation.Scroll += new System.EventHandler(this.trackBarSaturation_Scroll);
+            // 
+            // btnResetContrast
+            // 
+            this.btnResetContrast.Location = new System.Drawing.Point(17, 66);
+            this.btnResetContrast.Name = "btnResetContrast";
+            this.btnResetContrast.Size = new System.Drawing.Size(75, 23);
+            this.btnResetContrast.TabIndex = 9;
+            this.btnResetContrast.Text = "Reset";
+            this.btnResetContrast.UseVisualStyleBackColor = true;
+            this.btnResetContrast.Click += new System.EventHandler(this.btnResetContrast_Click);
+            // 
+            // btnResetBrightness
+            // 
+            this.btnResetBrightness.Location = new System.Drawing.Point(17, 30);
+            this.btnResetBrightness.Name = "btnResetBrightness";
+            this.btnResetBrightness.Size = new System.Drawing.Size(75, 23);
+            this.btnResetBrightness.TabIndex = 8;
+            this.btnResetBrightness.Text = "Reset";
+            this.btnResetBrightness.UseVisualStyleBackColor = true;
+            this.btnResetBrightness.Click += new System.EventHandler(this.btnResetBrightness_Click);
+            // 
+            // trackBarContrast
+            // 
+            this.trackBarContrast.Location = new System.Drawing.Point(108, 66);
+            this.trackBarContrast.Maximum = 100;
+            this.trackBarContrast.Minimum = -100;
+            this.trackBarContrast.Name = "trackBarContrast";
+            this.trackBarContrast.Size = new System.Drawing.Size(104, 56);
+            this.trackBarContrast.TabIndex = 6;
+            this.trackBarContrast.TickFrequency = 10;
+            this.trackBarContrast.Scroll += new System.EventHandler(this.trackBarContrast_Scroll);
+            // 
+            // trackBarBrightness
+            // 
+            this.trackBarBrightness.Location = new System.Drawing.Point(108, 21);
+            this.trackBarBrightness.Maximum = 100;
+            this.trackBarBrightness.Minimum = -100;
+            this.trackBarBrightness.Name = "trackBarBrightness";
+            this.trackBarBrightness.Size = new System.Drawing.Size(104, 56);
+            this.trackBarBrightness.TabIndex = 4;
+            this.trackBarBrightness.TickFrequency = 10;
+            this.trackBarBrightness.Scroll += new System.EventHandler(this.trackBarBrightness_Scroll);
+            // 
+            // lblBrightnessValue
+            // 
+            this.lblBrightnessValue.AutoSize = true;
+            this.lblBrightnessValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBrightnessValue.Location = new System.Drawing.Point(218, 30);
+            this.lblBrightnessValue.Name = "lblBrightnessValue";
+            this.lblBrightnessValue.Size = new System.Drawing.Size(90, 20);
+            this.lblBrightnessValue.TabIndex = 5;
+            this.lblBrightnessValue.Text = "Độ sáng: 0";
+            // 
+            // lblContrastValue
+            // 
+            this.lblContrastValue.AutoSize = true;
+            this.lblContrastValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblContrastValue.Location = new System.Drawing.Point(218, 66);
+            this.lblContrastValue.Name = "lblContrastValue";
+            this.lblContrastValue.Size = new System.Drawing.Size(115, 20);
+            this.lblContrastValue.TabIndex = 7;
+            this.lblContrastValue.Text = "Tương phản: 0";
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.btnDeleteImage);
+            this.groupBox1.Controls.Add(this.button1);
+            this.groupBox1.Controls.Add(this.btnFullScreen);
+            this.groupBox1.Controls.Add(this.btnRotateLeft);
+            this.groupBox1.Controls.Add(this.btnRotateRight);
+            this.groupBox1.Location = new System.Drawing.Point(25, 16);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(240, 76);
+            this.groupBox1.TabIndex = 8;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Thao Tác Cơ Bản";
+            // 
+            // btnDeleteImage
+            // 
+            this.btnDeleteImage.Image = ((System.Drawing.Image)(resources.GetObject("btnDeleteImage.Image")));
+            this.btnDeleteImage.Location = new System.Drawing.Point(148, 21);
+            this.btnDeleteImage.Name = "btnDeleteImage";
+            this.btnDeleteImage.Size = new System.Drawing.Size(40, 40);
+            this.btnDeleteImage.TabIndex = 6;
+            this.btnDeleteImage.UseVisualStyleBackColor = true;
+            this.btnDeleteImage.Click += new System.EventHandler(this.btnDeleteImage_Click);
+            // 
+            // button1
+            // 
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(194, 21);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(40, 40);
+            this.button1.TabIndex = 5;
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.ClientSize = new System.Drawing.Size(1227, 757);
+            this.Controls.Add(this.splitContainer1);
+            this.Controls.Add(this.menuStrip1);
+            this.DoubleBuffered = true;
+            this.MainMenuStrip = this.menuStrip1;
+            this.Name = "Form1";
+            this.Text = "ImageEditerApp";
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
+            this.groupBox3.ResumeLayout(false);
+            this.flowLayoutPanel1.ResumeLayout(false);
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarHue)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarTemperature)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarSaturation)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarContrast)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarBrightness)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
+
+        #endregion
+
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem imageToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem videoToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem cropToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem rotateToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem playToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem cutToolStripMenuItem;
+        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.Button btnFullScreen;
+        private System.Windows.Forms.Button btnRotateRight;
+        private System.Windows.Forms.Button btnRotateLeft;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.Label lblBrightnessValue;
+        private System.Windows.Forms.TrackBar trackBarBrightness;
+        private System.Windows.Forms.TrackBar trackBarContrast;
+        private System.Windows.Forms.Label lblContrastValue;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button btnResetContrast;
+        private System.Windows.Forms.Button btnResetBrightness;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnSaturation;
+        private System.Windows.Forms.Label lblSaturationValue;
+        private System.Windows.Forms.TrackBar trackBarSaturation;
+        private System.Windows.Forms.Button btnResetTemperature;
+        private System.Windows.Forms.Label lblTemperatureValue;
+        private System.Windows.Forms.TrackBar trackBarTemperature;
+        private System.Windows.Forms.Button btnResetHue;
+        private System.Windows.Forms.Label lblHueValue;
+        private System.Windows.Forms.TrackBar trackBarHue;
+        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.Button btnGrayscale;
+        private System.Windows.Forms.Button btnCoolEffect;
+        private System.Windows.Forms.Button btnOriginal;
+        private System.Windows.Forms.Button btnNatureEffect;
+        private System.Windows.Forms.Button btnWarmEffect;
+        private System.Windows.Forms.Button btnFadedEffect;
+        private System.Windows.Forms.Button btnTextureEffect;
+        private System.Windows.Forms.Button btnWhiteEffect;
+        private System.Windows.Forms.Button btnParadiseEffect;
+        private System.Windows.Forms.Button btnAutumnEffect;
+        private System.Windows.Forms.Button btnSunlightEffect;
+        private System.Windows.Forms.Button btnSeaEffect;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.Button btnPicnic;
+        private System.Windows.Forms.Button btnTasty;
+        private System.Windows.Forms.Button btnCream;
+        private System.Windows.Forms.Button btnVivid;
+        private System.Windows.Forms.Button btnDeleteImage;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+    }
+}
+

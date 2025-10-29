@@ -1,0 +1,2077 @@
+﻿using AFP.BLL.DTOs;
+using AFP.BLL.Services;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.Entity;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Runtime.Remoting.Contexts;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using AFP.DAL.Entities;
+using AFP.DAL.Repositories;
+
+namespace AppFixPicture
+{
+    public partial class Form1 : Form
+    {
+        private Image currentImage; // Lưu trữ ảnh hiện tại để chỉnh sửa
+        private Bitmap originalStoredBitmap;
+        private FormWindowState previousWindowState;
+        private bool isImageMaximized = false;
+        private bool isCropping = false;
+        private Point cropStartPoint; // Tọa độ bắt đầu vẽ (MouseDown)
+        private Point cropEndPoint;   // Tọa độ kết thúc vẽ (MouseMove/MouseUp)
+        private Rectangle cropRectangle; // Hình chữ nhật vùng cắt
+        private Bitmap originalBitmapForCrop; // Dùng để lưu ảnh gốc khi bắt đầu Crop
+        private List<Bitmap> historyStack = new List<Bitmap>(); 
+        // Chỉ mục trỏ đến trạng thái hiện tại trong lịch sử (để biết nên Undo hay Redo)
+        private int historyIndex = -1;
+        private Bitmap originalLoadedBitmap;
+        private readonly AFP.DAL.Repositories.IUnitOfWork _unitOfWork;
+        private readonly AFP.BLL.Services.IProjectService _projectService; // Tên chuẩn nên dùng underscore
+        private readonly AFP.BLL.Services.IEditHistoryService _historyService; // Thêm cái này nếu bạn dùng nó
+
+        // Bạn cũng cần các thành viên này để sửa lỗi CS7036 (lỗi bên dưới)
+        //private AFP.DAL.Repositories.IUnitOfWork _unitOfWork;
+
+        // New: menu item for Projects (loads data from SQL via EF)
+        private ToolStripMenuItem projectsToolStripMenuItem;
+        private ToolStripMenuItem saveProjectToolStripMenuItem;
+
+        // Current loaded project and image path
+        private AFP.BLL.DTOs.ProjectDto currentProjectDto;
+        private string currentImagePath;
+
+        // 2. Ảnh gốc hiện tại (Được cập nhật khi áp dụng hiệu ứng đặc biệt như Grayscale/Faded)
+        public Form1(IUnitOfWork unitOfWork, IProjectService projectService, IEditHistoryService historyService)
+        {
+            InitializeComponent();
+            //var context = new AFP.DAL.Entities.PictureFixModel();
+            //this._unitOfWork = new AFP.DAL.Repositories.UnitOfWork(context);
+
+            // Khởi tạo Services, sửa lỗi CS0120 và chuẩn bị cho CS7036
+            this._unitOfWork = unitOfWork;
+            this._projectService = projectService;
+            this._historyService = historyService;
+            // Add a "Projects" menu item programmatically to avoid editing Designer
+            projectsToolStripMenuItem = new ToolStripMenuItem("Projects");
+            projectsToolStripMenuItem.Click += ProjectsMenu_Click;
+            // Insert at end of menuStrip1 (safe because menuStrip1 exists in Designer)
+            menuStrip1.Items.Add(projectsToolStripMenuItem);
+
+            // Add a "Save Project" menu item
+            saveProjectToolStripMenuItem = new ToolStripMenuItem("Save Project");
+            saveProjectToolStripMenuItem.Click += async (s, e) => await SaveProjectMenu_Click(s, e);
+            menuStrip1.Items.Add(saveProjectToolStripMenuItem);
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // 1. Dọn dẹp components của Form
+                if (components != null)
+                {
+                    components.Dispose();
+                }
+
+                // 2. Dọn dẹp UnitOfWork (để đóng DbContext/Kết nối DB)
+                if (this._unitOfWork != null)
+                {
+                    this._unitOfWork.Dispose(); // GỌI DISPOSE TRỰC TIẾP
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
+        // Loads projects asynchronously from BLL service
+        private async Task<List<ProjectDto>> LoadProjectsFromDbAsync()
+        {
+            // Use BLL service
+            return await _projectService.GetAllAsync();
+        }
+
+        // Menu click -> open dialog with projects list
+        private async void ProjectsMenu_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var projects = await LoadProjectsFromDbAsync();
+                ShowProjectsDialog(projects);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tải danh sách Project từ cơ sở dữ liệu: {ex.Message}", "Lỗi");
+            }
+        }
+
+        // Build and show a lightweight modal dialog that lists Projects and allows loading the image
+        private void ShowProjectsDialog(List<ProjectDto> projects)
+        {
+            Form dlg = new Form
+            {
+                Text = "Projects",
+                Width = 520,
+                Height = 420,
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            var lb = new ListBox
+            {
+                Dock = DockStyle.Fill,
+                DisplayMember = "ProjectName"
+            };
+
+            // Use a BindingSource so we can refresh easily
+            var bs = new BindingSource();
+            bs.DataSource = projects;
+            lb.DataSource = bs;
+
+            var panel = new Panel { Dock = DockStyle.Bottom, Height = 48 };
+
+            var btnLoad = new Button { Text = "Load Image", Left = 8, Top = 8, Width = 120 };
+            btnLoad.Click += (s, e) =>
+            {
+                var sel = lb.SelectedItem as ProjectDto;
+                if (sel == null)
+                {
+                    MessageBox.Show("Vui lòng chọn một Project.", "Thông báo");
+                    return;
+                }
+
+                // Prefer LastSavedPath if present and exists, otherwise fall back to OriginalFilePath
+                string pathToLoad = null;
+                if (!string.IsNullOrWhiteSpace(sel.LastSavedPath) && File.Exists(sel.LastSavedPath))
+                {
+                    pathToLoad = sel.LastSavedPath;
+                }
+                else if (!string.IsNullOrWhiteSpace(sel.OriginalFilePath) && File.Exists(sel.OriginalFilePath))
+                {
+                    pathToLoad = sel.OriginalFilePath;
+                }
+
+                if (string.IsNullOrWhiteSpace(pathToLoad))
+                {
+                    MessageBox.Show("Không tìm thấy file ảnh cho Project đã chọn.", "Lỗi");
+                    return;
+                }
+
+                try
+                {
+                    // Set current project and path
+                    currentProjectDto = sel;
+                    currentImagePath = pathToLoad;
+
+                    // Reuse existing LoadImage method to ensure consistent behavior
+                    LoadImage(pathToLoad);
+                    dlg.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Không thể tải ảnh: {ex.Message}", "Lỗi");
+                }
+            };
+
+            var btnRefresh = new Button { Text = "Refresh", Left = 136, Top = 8, Width = 100 };
+            btnRefresh.Click += async (s, e) =>
+            {
+                try
+                {
+                    btnRefresh.Enabled = false;
+                    var refreshed = await LoadProjectsFromDbAsync();
+                    bs.DataSource = refreshed;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi làm mới: {ex.Message}", "Lỗi");
+                }
+                finally
+                {
+                    btnRefresh.Enabled = true;
+                }
+            };
+
+            var btnClose = new Button { Text = "Close", Left = 248, Top = 8, Width = 100 };
+            btnClose.Click += (s, e) => dlg.Close();
+
+            panel.Controls.Add(btnLoad);
+            panel.Controls.Add(btnRefresh);
+            panel.Controls.Add(btnClose);
+
+            dlg.Controls.Add(lb);
+            dlg.Controls.Add(panel);
+
+            dlg.ShowDialog(this);
+        }
+
+        private void SaveState()
+        {
+            if (currentImage == null) return;
+
+            // 1. Loại bỏ các trạng thái "Redo" nếu chúng ta đang ở giữa lịch sử và thực hiện thao tác mới
+            if (historyIndex < historyStack.Count - 1)
+            {
+                // Giải phóng bộ nhớ của các trạng thái bị cắt bỏ
+                for (int i = historyIndex + 1; i < historyStack.Count; i++)
+                {
+                    historyStack[i].Dispose();
+                }
+                historyStack.RemoveRange(historyIndex + 1, historyStack.Count - (historyIndex + 1));
+            }
+
+            // 2. TẠO BẢN SAO của ảnh hiện tại để lưu vào lịch sử
+            Bitmap newState = new Bitmap(currentImage);
+
+            // 3. Thêm bản sao vào ngăn xếp
+            historyStack.Add(newState);
+
+            // 4. Di chuyển chỉ mục tới trạng thái mới nhất
+            historyIndex = historyStack.Count - 1;
+
+            // Cập nhật trạng thái nút Undo/Redo (Nếu bạn có nút Redo)
+            UpdateUndoRedoButtons();
+        }
+        private void UpdateUndoRedoButtons()
+        {
+            // Giả sử nút Undo của bạn có tên là btnUndo
+            // btnUndo.Enabled = historyIndex > 0;
+
+            // Nếu bạn có nút Redo (ví dụ: btnRedo)
+            // btnRedo.Enabled = historyIndex < historyStack.Count - 1;
+        }
+        private Rectangle ScaleCoordinate(Rectangle rect)
+        {
+            if (currentImage == null)
+            {
+                return Rectangle.Empty;
+            }
+
+            // 1. Lấy kích thước thực tế của ảnh
+            int originalWidth = currentImage.Width;
+            int originalHeight = currentImage.Height;
+
+            // 2. Lấy kích thước hiển thị (display size) của PictureBox
+            int controlWidth = pictureBox1.Width;
+            int controlHeight = pictureBox1.Height;
+
+            // 3. Tính tỷ lệ co dãn (Zoom)
+            float ratioX = (float)controlWidth / originalWidth;
+            float ratioY = (float)controlHeight / originalHeight;
+            float ratio = Math.Min(ratioX, ratioY); // SizeMode.Zoom dùng tỷ lệ nhỏ nhất
+
+            // 4. Tính toán kích thước ảnh được hiển thị sau khi Zoom
+            int displayedWidth = (int)(originalWidth * ratio);
+            int displayedHeight = (int)(originalHeight * ratio);
+
+            // 5. Tính toán Offset (vùng đệm màu trắng/xám xung quanh ảnh)
+            int offsetX = (controlWidth - displayedWidth) / 2;
+            int offsetY = (controlHeight - displayedHeight) / 2;
+
+            // 6. Chuyển đổi tọa độ Crop (từ màn hình sang pixel thực)
+
+            // Loại bỏ Offset khỏi tọa độ màn hình
+            int startX = rect.X - offsetX;
+            int startY = rect.Y - offsetY;
+
+            // Áp dụng Tỷ lệ ngược lại (chia cho ratio)
+            int scaledX = (int)(startX / ratio);
+            int scaledY = (int)(startY / ratio);
+            int scaledWidth = (int)(rect.Width / ratio);
+            int scaledHeight = (int)(rect.Height / ratio);
+
+            // 7. Tạo Rectangle đã được Scale và giới hạn nó trong kích thước ảnh gốc
+            Rectangle scaledRect = new Rectangle(scaledX, scaledY, scaledWidth, scaledHeight);
+
+            // Đảm bảo không vượt quá biên của ảnh gốc
+            scaledRect.Intersect(new Rectangle(0, 0, originalWidth, originalHeight));
+
+            return scaledRect;
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openDlg = new OpenFileDialog();
+            openDlg.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp";
+            if (openDlg.ShowDialog() == DialogResult.OK)
+            {
+                // Clear current project because this is an arbitrary file
+                currentProjectDto = null;
+                currentImagePath = openDlg.FileName;
+
+                // Chỉ cần gọi hàm LoadImage, hàm này sẽ xử lý việc gán currentImage và pictureBox1.Image
+                LoadImage(openDlg.FileName);
+            }
+        }
+
+        private void LoadImage(string imagePath)
+        {
+            Image tempImage = null;
+
+            try
+            {
+                tempImage = Image.FromFile(imagePath);
+
+                // **BỔ SUNG:** Tạo Bitmap an toàn (32bppArgb) cho việc chỉnh sửa
+                Bitmap safeBitmap = new Bitmap(tempImage.Width, tempImage.Height, PixelFormat.Format32bppArgb);
+
+                using (Graphics g = Graphics.FromImage(safeBitmap))
+                {
+                    // Vẽ ảnh gốc vào Bitmap an toàn
+                    g.DrawImage(tempImage, 0, 0, tempImage.Width, tempImage.Height);
+                }
+
+                // 2. TẠO BẢN SAO CHO currentImage và originalStoredBitmap (Đúng quy trình)
+                if (currentImage != null) currentImage.Dispose();
+                if (originalStoredBitmap != null) originalStoredBitmap.Dispose();
+                if (originalLoadedBitmap != null) originalLoadedBitmap.Dispose();
+
+                currentImage = safeBitmap; // Gán đối tượng an toàn
+                originalStoredBitmap = new Bitmap(currentImage); // Gán ảnh gốc cũng là bản an toàn
+                originalLoadedBitmap = new Bitmap(currentImage);
+
+                // update currentImagePath
+                currentImagePath = imagePath;
+
+                // 3. Gán đối tượng đã sẵn sàng chỉnh sửa cho PictureBox
+                pictureBox1.Image = currentImage;
+
+                historyStack.Clear();
+                historyIndex = -1;
+                SaveState();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi tải ảnh: {ex.Message}\nKiểm tra lại đường dẫn file hoặc định dạng ảnh.", "Lỗi Tải Ảnh");
+            }
+            finally
+            {
+                // 4. Đảm bảo giải phóng đối tượng tạm thời sau khi tạo bản sao
+                if (tempImage != null)
+                {
+                    tempImage.Dispose();
+                }
+            }
+        }
+        private Bitmap AdjustBrightness(Bitmap originalBitmap, int brightnessValue)
+        {
+
+
+            // Giá trị Offset (từ -1.0f đến 1.0f)
+            // Chia cho 255 vì ma trận màu hoạt động trong khoảng 0 đến 1.0
+            float bright = brightnessValue / 255.0f;
+
+            // Tạo ColorMatrix
+            ColorMatrix colorMatrix = new ColorMatrix(new float[][]
+            {
+        // R  G  B  A  W (W là màu trắng/offset)
+        new float[] {1, 0, 0, 0, 0}, // Red scale
+        new float[] {0, 1, 0, 0, 0}, // Green scale
+        new float[] {0, 0, 1, 0, 0}, // Blue scale
+        new float[] {0, 0, 0, 1, 0}, // Alpha scale
+        new float[] {bright, bright, bright, 0, 1} // Brightness Offset
+            });
+
+            // Tạo ImageAttributes để áp dụng ColorMatrix
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // Chuẩn bị tạo Bitmap mới
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            Bitmap newBitmap = new Bitmap(width, height);
+
+            // Tạo đối tượng Graphics để vẽ Bitmap mới
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                // Vẽ lại ảnh gốc lên Bitmap mới với ColorMatrix đã áp dụng
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Hỏi người dùng có chắc chắn muốn thoát không
+            DialogResult result = MessageBox.Show(
+                "Bạn có muốn thoát ứng dụng không? Dữ liệu chưa lưu có thể bị mất.",
+                "Xác nhận Thoát",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            // Nếu người dùng chọn 'Có' (Yes)
+            if (result == DialogResult.Yes)
+            {
+                Application.Exit();
+            }
+        }
+
+        private void btnFullScreen_Click(object sender, EventArgs e)
+        {
+            isImageMaximized = !isImageMaximized;
+
+            if (isImageMaximized)
+            {
+                // 1. CHẾ ĐỘ PHÓNG TO ẢNH (MAXIMIZED IMAGE)
+
+                // Ẩn Panel chứa các công cụ (Panel1 của SplitContainer)
+                // Lưu ý: Collapse là cách gọn gàng nhất để ẩn Panel trong SplitContainer.
+                splitContainer1.Panel1Collapsed = true;
+
+                // Đảm bảo Form luôn ở trạng thái cửa sổ/tối đa hóa bình thường
+                // Không cần thay đổi this.FormBorderStyle hay this.WindowState ở đây.
+
+                // Tùy chỉnh hiển thị PictureBox để ảnh lấp đầy toàn bộ Panel2
+                // Thường dùng SizeMode.Zoom để giữ tỷ lệ và lấp đầy.
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+
+                // Đặt PictureBox chiếm toàn bộ không gian của PanelContainer (nếu có)
+                pictureBox1.Dock = DockStyle.Fill;
+
+            }
+            else
+            {
+                // 2. CHẾ ĐỘ THU THƯỜNG (NORMAL VIEW)
+
+                // Hiện lại Panel chứa các công cụ (Panel1 của SplitContainer)
+                splitContainer1.Panel1Collapsed = false;
+
+                // KHÔI PHỤC cài đặt ban đầu cho PictureBox (dành cho chức năng zoom chuột/thanh cuộn)
+                // Nếu bạn dùng zoom chuột/thanh cuộn (như đã hướng dẫn), hãy thiết lập lại:
+
+                pictureBox1.Dock = DockStyle.None; // Hoặc DockStyle.TopLeft (Nếu dùng Panel AutoScroll)
+
+                // Khôi phục SizeMode ban đầu (Normal hoặc StretchImage nếu bạn dùng AutoScroll)
+                // Nếu bạn dùng phương pháp zoom chuột đã hướng dẫn:
+                // pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage; 
+
+                // Nếu bạn dùng zoom chuột, bạn sẽ cần gọi lại hàm cập nhật kích thước của PictureBox
+                // UpdateImageSize(); 
+            }
+
+        }
+
+        private void btnRotateLeft_Click(object sender, EventArgs e)
+        {
+            if (currentImage != null)
+            {
+                // Xoay ảnh 90 độ ngược chiều kim đồng hồ
+                currentImage.RotateFlip(RotateFlipType.Rotate270FlipNone);
+
+                // Gán lại đối tượng ảnh và Refresh
+                pictureBox1.Image = currentImage;
+                pictureBox1.Refresh();
+
+                // UpdateImageSize(); // Nếu cần
+                SaveState();
+            }
+        }
+
+        private void btnRotateRight_Click(object sender, EventArgs e)
+        {
+            if (currentImage != null)
+            {
+                // 1. Thực hiện thao tác xoay trên đối tượng hiện tại
+                currentImage.RotateFlip(RotateFlipType.Rotate90FlipNone);
+
+                // 2. Gán lại đối tượng ảnh cho PictureBox 
+                //    (Điều này buộc PictureBox phải vẽ lại đối tượng mới)
+                pictureBox1.Image = currentImage;
+
+                // 3. Gọi hàm Refresh() để đảm bảo việc vẽ lại xảy ra ngay lập tức
+                pictureBox1.Refresh();
+
+                // Nếu bạn có dùng tính năng zoom/AutoScroll, bạn cần cập nhật lại kích thước
+                // UpdateImageSize(); 
+            }
+        }
+
+        private void pictureBox1_DoubleClick(object sender, EventArgs e)
+        {
+            // Gọi hàm chuyển đổi Full Screen/Normal
+            btnFullScreen_Click(sender, e);
+        }
+
+        private void trackBarBrightness_Scroll(object sender, EventArgs e)
+        {
+            // 1. Cập nhật giá trị hiển thị
+            int value = trackBarBrightness.Value;
+            lblBrightnessValue.Text = $"Độ sáng: {value}";
+
+            // 2. GỌI HÀM ÁP DỤNG THAY ĐỔI
+            ApplyAdjustments();
+        }
+        private void ApplyAdjustments()
+        {
+            // Fix: if there is no original stored bitmap, nothing to adjust
+            if (originalStoredBitmap == null)
+            {
+                return;
+            }
+
+            // Lấy giá trị từ TrackBar
+            int brightnessValue = trackBarBrightness.Value;
+            int contrastValue = trackBarContrast.Value;
+            int saturationValue = trackBarSaturation.Value;
+            int temperatureValue = trackBarTemperature.Value;
+            // THÊM GIÁ TRỊ HUE MỚI
+            int hueValue = trackBarHue.Value;
+
+            // 1. TẠO BẢN SAO SẠCH TỪ ẢNH GỐC
+            Bitmap baseBitmap = new Bitmap(originalStoredBitmap);
+
+            // 2. ÁP DỤNG ĐỘ SÁNG
+            Bitmap brightBitmap = AdjustBrightness(baseBitmap, brightnessValue);
+            baseBitmap.Dispose();
+
+            // 3. ÁP DỤNG ĐỘ TƯƠNG PHẢN
+            Bitmap contrastBitmap = AdjustContrast(brightBitmap, contrastValue);
+            brightBitmap.Dispose();
+
+            // 4. ÁP DỤNG NHIỆT ĐỘ MÀU
+            Bitmap temperatureBitmap = AdjustTemperature(contrastBitmap, temperatureValue);
+            contrastBitmap.Dispose();
+
+            // 5. ÁP DỤNG ĐỘ BÃO HÒA
+            Bitmap saturationBitmap = AdjustSaturation(temperatureBitmap, saturationValue);
+            temperatureBitmap.Dispose();
+
+            // 6. ÁP DỤNG TÔNG MÀU (HUE) (TRẠNG THÁI CUỐI CÙNG)
+            Bitmap adjustedBitmap = AdjustHue(saturationBitmap, hueValue);
+            saturationBitmap.Dispose();
+
+            // 7. Giải phóng currentImage CŨ trước khi gán cái mới
+            if (currentImage != null && pictureBox1.Image != originalStoredBitmap)
+            {
+                pictureBox1.Image.Dispose();
+            }
+
+            // 8. Cập nhật và hiển thị
+            currentImage = adjustedBitmap;
+            pictureBox1.Image = currentImage;
+            pictureBox1.Refresh();
+        }
+        private Bitmap AdjustContrast(Bitmap originalBitmap, int contrastValue)
+        {
+            // Nếu không có ảnh hoặc giá trị tương phản là 0, trả về ảnh gốc
+
+
+            // Công thức chuyển giá trị TrackBar (-100 đến 100) sang hệ số Contrast (0.0 đến 4.0)
+            // Contrast = (100 + value) / 100.0f
+            float scale = (100f + contrastValue) / 100f;
+
+            // Offset (Để giữ cho màu xám ở giữa không bị dịch chuyển)
+            float offset = 0.5f * (1f - scale);
+
+            // Tạo ColorMatrix
+            ColorMatrix colorMatrix = new ColorMatrix(new float[][]
+            {
+        // R  G  B  A  W (W là màu trắng/offset)
+        new float[] {scale, 0, 0, 0, 0}, // Red Scale
+        new float[] {0, scale, 0, 0, 0}, // Green Scale
+        new float[] {0, 0, scale, 0, 0}, // Blue Scale
+        new float[] {0, 0, 0, 1, 0},    // Alpha Scale
+        new float[] {offset, offset, offset, 0, 1} // Offset
+            });
+
+            // Tạo ImageAttributes để áp dụng ColorMatrix
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // Chuẩn bị tạo Bitmap mới
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            Bitmap newBitmap = new Bitmap(width, height);
+
+            // Tạo đối tượng Graphics để vẽ Bitmap mới
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                // Vẽ lại ảnh gốc lên Bitmap mới với ColorMatrix đã áp dụng
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+
+        private void trackBarContrast_Scroll(object sender, EventArgs e)
+        {
+            // Cập nhật giá trị hiển thị
+            int value = trackBarContrast.Value;
+            lblContrastValue.Text = $"Tương phản: {value}";
+
+            // Gọi hàm áp dụng chung (sẽ đọc cả độ sáng và độ tương phản)
+            ApplyAdjustments();
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnResetBrightness_Click(object sender, EventArgs e)
+        {
+            // 1. Đặt giá trị TrackBar Độ sáng về 0
+            trackBarBrightness.Value = 0;
+
+            // 2. Cập nhật Label hiển thị giá trị
+            lblBrightnessValue.Text = $"Độ sáng: 0";
+
+            // 3. Áp dụng hiệu chỉnh (Điều này sẽ kích hoạt việc vẽ lại ảnh)
+            ApplyAdjustments();
+        }
+
+        private void btnResetContrast_Click(object sender, EventArgs e)
+        {
+            // 1. Đặt giá trị TrackBar Tương phản về 0
+            trackBarContrast.Value = 0;
+
+            // 2. Cập nhật Label hiển thị giá trị
+            lblContrastValue.Text = $"Tương phản: 0";
+
+            // 3. Áp dụng hiệu chỉnh (Điều này sẽ kích hoạt việc vẽ lại ảnh)
+            ApplyAdjustments();
+        }
+
+        private void btnCrop_Click(object sender, EventArgs e)
+        {
+            // Bật/Tắt chế độ Crop
+            isCropping = !isCropping;
+
+            if (isCropping)
+            {
+                // 1. Lưu ảnh hiện tại vào biến tạm (để khi vẽ không làm hỏng ảnh gốc)
+                if (currentImage != null)
+                {
+                    // Đảm bảo ảnh gốc đang hiển thị là Bitmap (để hỗ trợ thao tác Graphics)
+                    originalBitmapForCrop = new Bitmap(currentImage);
+                }
+
+                // 2. Thay đổi con trỏ chuột để báo hiệu chế độ Crop
+                pictureBox1.Cursor = Cursors.Cross;
+
+                // 3. Khởi tạo lại các điểm chọn
+                cropRectangle = Rectangle.Empty;
+
+                // Cập nhật trạng thái nút (ví dụ: đổi màu nút để báo hiệu đang bật)
+            }
+            else
+            {
+                // Tắt chế độ Crop
+                pictureBox1.Cursor = Cursors.Default;
+            }
+            pictureBox1.Invalidate(); // Buộc PictureBox vẽ lại (xóa vùng chọn cũ)
+        }
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (isCropping && currentImage != null && e.Button == MouseButtons.Left)
+            {
+                // Bắt đầu vùng chọn tại vị trí chuột
+                cropStartPoint = e.Location;
+            }
+        }
+
+        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isCropping && currentImage != null && e.Button == MouseButtons.Left)
+            {
+                // Chỉ vẽ khi chuột trái đang được giữ
+                cropEndPoint = e.Location;
+
+                // Tính toán Rectangle mới
+                int x = Math.Min(cropStartPoint.X, cropEndPoint.X);
+                int y = Math.Min(cropStartPoint.Y, cropEndPoint.Y);
+                int w = Math.Abs(cropStartPoint.X - cropEndPoint.X);
+                int h = Math.Abs(cropStartPoint.Y - cropEndPoint.Y);
+
+                cropRectangle = new Rectangle(x, y, w, h);
+
+                // Yêu cầu PictureBox vẽ lại (sẽ kích hoạt sự kiện Paint)
+                pictureBox1.Invalidate();
+            }
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (isCropping && currentImage != null && cropRectangle.Width > 0 && cropRectangle.Height > 0)
+            {
+                // 1. Tắt chế độ Crop
+                isCropping = false;
+                pictureBox1.Cursor = Cursors.Default;
+
+                try
+                {
+                    // 2. Thực hiện Crop
+                    Bitmap newBitmap = PerformCrop(cropRectangle);
+
+                    // 3. Giải phóng currentImage cũ
+                    if (currentImage != null)
+                    {
+                        currentImage.Dispose();
+                    }
+
+                    // 4. Cập nhật ảnh mới
+                    currentImage = newBitmap;
+                    originalStoredBitmap = new Bitmap(currentImage); // Cập nhật ảnh gốc lưu trữ
+                    pictureBox1.Image = currentImage;
+
+                    // 5. Reset các thanh trượt màu sắc về 0 (để tránh lỗi xung đột)
+                    trackBarBrightness.Value = 0;
+                    trackBarContrast.Value = 0;
+
+                    // Xóa vùng chọn khỏi màn hình
+                    cropRectangle = Rectangle.Empty;
+                    pictureBox1.Invalidate();
+                    SaveState();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi cắt ảnh: " + ex.Message);
+                }
+            }
+            // Nếu nhả chuột ngoài vùng ảnh, chỉ cần vô hiệu hóa điểm kết thúc
+            cropEndPoint = Point.Empty;
+        }
+        private Bitmap PerformCrop(Rectangle rect)
+        {
+            if (currentImage == null || originalBitmapForCrop == null || rect.Width <= 0 || rect.Height <= 0)
+            {
+                return originalBitmapForCrop;
+            }
+
+            // 1. CHUYỂN ĐỔI TỌA ĐỘ TỪ MÀN HÌNH (PICTUREBOX) SANG PIXEL THỰC CỦA BITMAP
+            Rectangle sourceRect = ScaleCoordinate(rect);
+
+            // Kiểm tra lại kích thước sau khi Scale
+            if (sourceRect.Width <= 0 || sourceRect.Height <= 0)
+            {
+                // Vùng chọn quá nhỏ hoặc không hợp lệ sau khi scale
+                return originalBitmapForCrop;
+            }
+
+            // 2. Thực hiện cắt ảnh bằng Bitmap.Clone()
+            Bitmap croppedBitmap = originalBitmapForCrop.Clone(sourceRect, originalBitmapForCrop.PixelFormat);
+
+            // 3. Giải phóng ảnh tạm thời dùng để crop (Rất quan trọng)
+            if (originalBitmapForCrop != null)
+            {
+                originalBitmapForCrop.Dispose();
+                originalBitmapForCrop = null;
+            }
+
+            return croppedBitmap;
+        }
+
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            // Chỉ vẽ vùng chọn khi đang ở chế độ Crop và vùng chọn có kích thước
+            if (isCropping && !cropRectangle.IsEmpty)
+            {
+                // Dùng bút (Pen) màu đỏ, nét đứt để vẽ viền
+                Pen cropPen = new Pen(Color.Red, 2);
+                cropPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+
+                // Vẽ hình chữ nhật lên PictureBox
+                e.Graphics.DrawRectangle(cropPen, cropRectangle);
+
+                cropPen.Dispose();
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // Kiểm tra xem còn trạng thái nào trước đó không
+            if (historyIndex > 0)
+            {
+                // 1. Giảm chỉ mục lịch sử đi 1
+                historyIndex--;
+
+                // 2. Lấy Bitmap ở trạng thái trước đó
+                Bitmap previousState = historyStack[historyIndex];
+
+                // 3. Giải phóng currentImage cũ trước khi gán cái mới
+                if (currentImage != null)
+                {
+                    currentImage.Dispose();
+                }
+
+                // 4. Gán ảnh và cập nhật các biến quản lý
+                currentImage = new Bitmap(previousState);
+                originalStoredBitmap = new Bitmap(previousState);
+                pictureBox1.Image = currentImage;
+                pictureBox1.Refresh();
+
+                // 5. Cập nhật các thanh trượt về 0 (để giao diện đồng bộ)
+                trackBarBrightness.Value = 0;
+                trackBarContrast.Value = 0;
+                lblBrightnessValue.Text = $"Độ sáng: 0";
+                lblContrastValue.Text = $"Tương phản: 0";
+
+                // 6. Cập nhật trạng thái nút
+                UpdateUndoRedoButtons();
+            }
+        }
+        private Bitmap AdjustSaturation(Bitmap originalBitmap, int saturationValue)
+        {
+
+            // 2. Tính hệ số bão hòa S (0.0 đến 2.0)
+            // Giá trị TrackBar (0-200) / 100.0f
+            float S = saturationValue / 100.0f;
+
+            // 3. Khai báo các hằng số trọng số Grayscale (Luminance Weights)
+            // Đây là trọng số tiêu chuẩn để tính độ sáng tương đối của từng kênh màu
+            float R_W = 0.3086f; // Trọng số cho kênh Đỏ
+            float G_W = 0.6094f; // Trọng số cho kênh Xanh lá
+            float B_W = 0.0820f; // Trọng số cho kênh Xanh dương
+
+            // 4. Thiết lập Ma trận màu (Color Matrix)
+            // Công thức: M[i, j] = 1 (nếu i=j) * S + W[j] * (1 - S)
+            float[][] colorMatrixElements = new float[][]
+            {
+        new float[] { R_W * (1 - S) + S, G_W * (1 - S),     B_W * (1 - S),     0, 0 }, // Red
+        new float[] { R_W * (1 - S),     G_W * (1 - S) + S, B_W * (1 - S),     0, 0 }, // Green
+        new float[] { R_W * (1 - S),     G_W * (1 - S),     B_W * (1 - S) + S, 0, 0 }, // Blue
+        new float[] { 0,                 0,                 0,                 1, 0 }, // Alpha
+        new float[] { 0,                 0,                 0,                 0, 1 }  // Offset
+            };
+
+            ColorMatrix colorMatrix = new ColorMatrix(colorMatrixElements);
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // 5. Tạo Bitmap mới và vẽ lại ảnh
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            Bitmap newBitmap = new Bitmap(width, height);
+
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+        private Bitmap AdjustTemperature(Bitmap originalBitmap, int temperatureValue)
+        {
+            // Chuyển đổi giá trị TrackBar (-100 đến 100) thành hệ số điều chỉnh (scale factor)
+            // Giá trị này sẽ nằm trong khoảng khoảng -0.5f đến 0.5f
+            float adjustment = temperatureValue / 200.0f;
+
+            // Hệ số điều chỉnh cho kênh Đỏ (Red). 
+            // Nếu adjustment dương (Warm), Red tăng lên (1 + adjustment).
+            // Nếu adjustment âm (Cool), Red giảm đi (1 - |adjustment|).
+            float redFactor = 1.0f + adjustment;
+
+            // Hệ số điều chỉnh cho kênh Xanh dương (Blue). 
+            // Ngược lại với Red. Nếu adjustment dương (Warm), Blue giảm đi (1 - adjustment).
+            // Nếu adjustment âm (Cool), Blue tăng lên (1 + |adjustment|).
+            float blueFactor = 1.0f - adjustment;
+
+            // Kênh Xanh lá (Green) giữ nguyên.
+            float greenFactor = 1.0f;
+
+            // Tạo ColorMatrix
+            ColorMatrix colorMatrix = new ColorMatrix(new float[][]
+            {
+        // R      G      B      A      W
+        new float[] {redFactor, 0, 0, 0, 0},     // Red scale
+        new float[] {0, greenFactor, 0, 0, 0},   // Green scale
+        new float[] {0, 0, blueFactor, 0, 0},    // Blue scale
+        new float[] {0, 0, 0, 1, 0},             // Alpha scale
+        new float[] {0, 0, 0, 0, 1}              // Offset
+            });
+
+            // Tạo ImageAttributes để áp dụng ColorMatrix
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // Chuẩn bị tạo Bitmap mới
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            Bitmap newBitmap = new Bitmap(width, height, originalBitmap.PixelFormat);
+
+            // Tạo đối tượng Graphics để vẽ Bitmap mới
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+        private Bitmap AdjustHue(Bitmap originalBitmap, int hueValue)
+        {
+            // Chuyển đổi góc xoay (Degrees) sang Radian
+            float theta = (float)(hueValue * Math.PI / 180.0);
+            float cosTheta = (float)Math.Cos(theta);
+            float sinTheta = (float)Math.Sin(theta);
+
+            // Trọng số độ sáng (Luminance Weights) chuẩn (Rec. 709)
+            // Các giá trị này được dùng để tính toán trục xoay Hue (trục Grayscale)
+            float R_W = 0.213f;
+            float G_W = 0.715f;
+            float B_W = 0.072f;
+
+            // Công thức ma trận xoay Hue (Color Matrix for Hue Rotation)
+            // Nguồn: Tài liệu tham khảo về Ma trận màu và Lý thuyết màu
+            float[][] colorMatrixElements = new float[][]
+            {
+        // 1. Dòng Đỏ (Red)
+        new float[] {
+            R_W + cosTheta * (1 - R_W) + sinTheta * (-R_W), // R
+            G_W + cosTheta * (-G_W) + sinTheta * (-G_W),    // G
+            B_W + cosTheta * (-B_W) + sinTheta * (1 - B_W), // B
+            0, 0
+        },
+
+        // 2. Dòng Xanh lá (Green)
+        new float[] {
+            R_W + cosTheta * (-R_W) + sinTheta * (0.140f),  // R
+            G_W + cosTheta * (1 - G_W) + sinTheta * (0.140f), // G
+            B_W + cosTheta * (-B_W) + sinTheta * (-0.283f), // B
+            0, 0
+        },
+
+        // 3. Dòng Xanh dương (Blue)
+        new float[] {
+            R_W + cosTheta * (-R_W) + sinTheta * (-(1-R_W)), // R
+            G_W + cosTheta * (-G_W) + sinTheta * (G_W),     // G
+            B_W + cosTheta * (1 - B_W) + sinTheta * (B_W),  // B
+            0, 0
+        },
+
+        // 4. Alpha và Offset (Không thay đổi)
+        new float[] {0, 0, 0, 1, 0},
+        new float[] {0, 0, 0, 0, 1}
+            };
+
+            // CHÚ THÍCH: Công thức trên là công thức tổng quát, nhưng hơi phức tạp 
+            // và dễ gây lỗi tính toán. Trong C# WinForms, để đơn giản hóa, 
+            // chúng ta có thể sử dụng công thức xoay màu (tách biệt YIQ, áp dụng xoay trên I và Q, rồi chuyển ngược về RGB), 
+            // hoặc đơn giản là áp dụng một công thức gần đúng cho ma trận:
+
+            // Khởi tạo ColorMatrix
+            ColorMatrix colorMatrix = new ColorMatrix(colorMatrixElements);
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // Tạo Bitmap mới và vẽ lại ảnh
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            Bitmap newBitmap = new Bitmap(width, height, originalBitmap.PixelFormat);
+
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+
+        private void trackBarSaturation_Scroll(object sender, EventArgs e)
+        {
+            // Cập nhật giá trị hiển thị
+            int value = trackBarSaturation.Value;
+            lblSaturationValue.Text = $"Độ bão hòa: {value}";
+
+            // Gọi hàm áp dụng chung
+            ApplyAdjustments();
+        }
+
+        private void btnSaturation_Click(object sender, EventArgs e)
+        {
+            // 1. Đặt giá trị TrackBar Tương phản về 0
+            trackBarSaturation.Value = 100;
+
+            // 2. Cập nhật Label hiển thị giá trị
+            lblSaturationValue.Text = $"Độ bão hòa: 100";
+
+            // 3. Áp dụng hiệu chỉnh (Điều này sẽ kích hoạt việc vẽ lại ảnh)
+            ApplyAdjustments();
+        }
+
+        private void btnResetHue_Click(object sender, EventArgs e)
+        {
+            // 1. Đặt giá trị TrackBar Hue về 0
+            trackBarHue.Value = 0;
+
+            // 2. Cập nhật Label hiển thị giá trị
+            lblHueValue.Text = $"Tông màu: 0°";
+
+            // 3. Áp dụng hiệu chỉnh
+            ApplyAdjustments();
+        }
+        // Đảm bảo sự kiện trackBarBrightness_Scroll cũng gọi ApplyAdjustments()
+        private Bitmap ApplyGrayscale(Bitmap originalBitmap)
+        {
+            // Trọng số độ sáng (Luminance Weights) chuẩn (Rec. 709)
+            // R = 0.2126, G = 0.7152, B = 0.0722
+            // Khi áp dụng Grayscale, mỗi kênh màu RGB đều được thay thế bằng giá trị độ sáng này.
+
+            float R_W = 0.2126f;
+            float G_W = 0.7152f;
+            float B_W = 0.0722f;
+
+            // Ma trận Grayscale
+            ColorMatrix colorMatrix = new ColorMatrix(new float[][]
+            {
+        // R         G         B         A         W
+        new float[] {R_W,      R_W,      R_W,      0, 0}, // Red
+        new float[] {G_W,      G_W,      G_W,      0, 0}, // Green
+        new float[] {B_W,      B_W,      B_W,      0, 0}, // Blue
+        new float[] {0,        0,        0,        1, 0}, // Alpha
+        new float[] {0,        0,        0,        0, 1}  // Offset
+            });
+
+            // Tạo ImageAttributes để áp dụng ColorMatrix
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // Chuẩn bị tạo Bitmap mới
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            // Đảm bảo Bitmap mới có định dạng hỗ trợ chỉnh sửa
+            Bitmap newBitmap = new Bitmap(width, height, originalBitmap.PixelFormat);
+
+            // Tạo đối tượng Graphics để vẽ Bitmap mới
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+
+        private void btnGrayscale_Click(object sender, EventArgs e)
+        {
+            if (currentImage == null) return;
+
+            // 1. Lưu trạng thái hiện tại trước khi chuyển đổi
+            SaveState();
+
+            // 2. Chuyển ảnh hiện tại sang Grayscale
+            Bitmap newBitmap = ApplyGrayscale(new Bitmap(currentImage));
+
+            // 3. Giải phóng currentImage cũ
+            if (currentImage != null)
+            {
+                currentImage.Dispose();
+            }
+
+            // 4. Cập nhật currentImage và hiển thị
+            currentImage = newBitmap;
+
+            // Đặt lại ảnh gốc lưu trữ là ảnh trắng đen mới
+            // Việc này rất quan trọng để các thanh trượt màu sắc hoạt động chính xác từ ảnh trắng đen này.
+            if (originalStoredBitmap != null)
+            {
+                originalStoredBitmap.Dispose();
+            }
+            originalStoredBitmap = new Bitmap(originalLoadedBitmap);
+
+            pictureBox1.Image = currentImage;
+            pictureBox1.Refresh();
+
+            // 5. Reset các thanh trượt màu sắc về trạng thái mặc định/trung tính
+            // (Vì hiệu ứng Trắng Đen thường là hiệu ứng cuối cùng, việc reset các thanh trượt là cần thiết)
+            trackBarBrightness.Value = 0;
+            trackBarContrast.Value = 0;
+            trackBarSaturation.Value = 100;
+            trackBarTemperature.Value = 0;
+            trackBarHue.Value = 0;
+
+            lblBrightnessValue.Text = $"Độ sáng: 0";
+            lblContrastValue.Text = $"Tương phản: 0";
+            lblSaturationValue.Text = $"Độ bão hòa: 100%";
+            lblTemperatureValue.Text = $"Nhiệt độ: 0";
+            lblHueValue.Text = $"Tông màu: 0°";
+        }
+
+        private void btnCoolEffect_Click(object sender, EventArgs e)
+        {
+            if (currentImage == null) return;
+
+            // 1. Lưu trạng thái hiện tại (Optional: để người dùng có thể Undo/Redo)
+            // SaveState(); 
+            // LƯU Ý: Nếu bạn gọi ApplyAdjustments() ở bước 3, bạn nên gọi SaveState sau bước 3
+            // hoặc đảm bảo bạn Reset tất cả các thanh trượt về 0 trước khi ApplyEffect
+
+            // 2. Thiết lập các giá trị cho hiệu ứng Cool
+            int coolTemperature = -80; // Làm ảnh lạnh đi
+            int coolSaturation = 110;  // Tăng bão hòa nhẹ để nổi bật màu lạnh
+            int coolBrightness = 10;   // Tăng sáng nhẹ
+            int coolContrast = 5;      // Giữ nguyên tương phản
+            int coolHue = -5;           // Giữ nguyên tông màu
+
+            // 3. Cập nhật các TrackBar và Label
+            trackBarTemperature.Value = coolTemperature;
+            trackBarSaturation.Value = coolSaturation;
+            trackBarBrightness.Value = coolBrightness;
+            trackBarContrast.Value = coolContrast;
+            trackBarHue.Value = coolHue;
+
+            lblTemperatureValue.Text = $"Nhiệt độ: {coolTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {coolSaturation}%";
+            lblBrightnessValue.Text = $"Độ sáng: {coolBrightness}";
+            lblContrastValue.Text = $"Tương phản: {coolContrast}";
+            lblHueValue.Text = $"Tông màu: {coolHue}°";
+
+            // 4. Gọi hàm áp dụng chung để hiển thị hiệu ứng
+            ApplyAdjustments();
+
+            // 5. LƯU TRẠIỚI MỚI SAU KHI ÁP DỤNG PRESET
+            // Việc này sẽ ghi lại kết quả của ApplyAdjustments() vào lịch sử.
+            SaveState();
+        }
+
+        private void btnOriginal_Click(object sender, EventArgs e)
+        {
+            // Kiểm tra xem có ảnh gốc được lưu trữ không
+            if (originalStoredBitmap == null) return;
+
+            // 1. Lưu trạng thái hiện tại (Nếu bạn muốn người dùng có thể Undo việc quay về ảnh gốc)
+            // Nếu bạn không muốn chức năng này có thể Undo, bỏ qua bước này.
+            // SaveState(); 
+
+            // 2. Tải lại ảnh gốc vào currentImage và pictureBox1
+            // Cần tạo một bản sao để tránh chỉnh sửa trực tiếp trên originalStoredBitmap
+
+            // Giải phóng currentImage cũ (nếu có)
+            if (currentImage != null)
+            {
+                currentImage.Dispose();
+            }
+
+            // Tạo bản sao mới của ảnh gốc
+            currentImage = new Bitmap(originalStoredBitmap);
+
+            // Gán và hiển thị ảnh gốc
+            pictureBox1.Image = currentImage;
+            pictureBox1.Refresh();
+
+            // 3. Đặt tất cả các thanh trượt về giá trị mặc định/trung tính
+
+            // Đặt lại các TrackBar
+            trackBarBrightness.Value = 0;
+            trackBarContrast.Value = 0;
+            trackBarSaturation.Value = 100;
+            trackBarTemperature.Value = 0;
+            trackBarHue.Value = 0;
+
+            // Cập nhật các Label hiển thị giá trị
+            lblBrightnessValue.Text = $"Độ sáng: 0";
+            lblContrastValue.Text = $"Tương phản: 0";
+            lblSaturationValue.Text = $"Độ bão hòa: 100%";
+            lblTemperatureValue.Text = $"Nhiệt độ: 0";
+            lblHueValue.Text = $"Tông màu: 0°";
+
+            // 4. (Optional) Lưu trạng thái ảnh gốc vào lịch sử
+            // Nếu bạn muốn người dùng có thể Redo trở lại các hiệu chỉnh trước đó, 
+            // hoặc đơn giản là muốn trạng thái gốc là trạng thái mới nhất trong lịch sử.
+            // SaveState(); 
+        }
+
+        private void btnNatureEffect_Click(object sender, EventArgs e)
+        {
+            if (currentImage == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng Nature (Tự nhiên)
+            int natureSaturation = 115;  // Tăng bão hòa nhẹ
+            int natureContrast = 15;     // Tăng tương phản nhẹ
+            int natureTemperature = 10;  // Hơi ấm nhẹ
+            int natureBrightness = 5;    // Hơi sáng nhẹ
+            int natureHue = 0;           // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarSaturation.Value = natureSaturation;
+            trackBarContrast.Value = natureContrast;
+            trackBarTemperature.Value = natureTemperature;
+            trackBarBrightness.Value = natureBrightness;
+            trackBarHue.Value = natureHue;
+
+            lblSaturationValue.Text = $"Độ bão hòa: {natureSaturation}%";
+            lblContrastValue.Text = $"Tương phản: {natureContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {natureTemperature}";
+            lblBrightnessValue.Text = $"Độ sáng: {natureBrightness}";
+            lblHueValue.Text = $"Tông màu: {natureHue}°";
+
+            // 3. Gọi hàm áp dụng chung để hiển thị hiệu ứng
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử để có thể Undo/Redo
+            SaveState();
+        }
+
+        private void btnWarmEffect_Click(object sender, EventArgs e)
+        {
+            if (currentImage == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng Warm (Ấm áp)
+            int warmTemperature = 60;   // Làm ảnh ấm lên
+            int warmSaturation = 110;   // Tăng bão hòa nhẹ để nổi bật màu ấm
+            int warmBrightness = 5;     // Tăng sáng nhẹ
+            int warmContrast = 5;       // Giữ nguyên tương phản
+            int warmHue = 20;            // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarTemperature.Value = warmTemperature;
+            trackBarSaturation.Value = warmSaturation;
+            trackBarBrightness.Value = warmBrightness;
+            trackBarContrast.Value = warmContrast;
+            trackBarHue.Value = warmHue;
+
+            lblTemperatureValue.Text = $"Nhiệt độ: {warmTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {warmSaturation}%";
+            lblBrightnessValue.Text = $"Độ sáng: {warmBrightness}";
+            lblContrastValue.Text = $"Tương phản: {warmContrast}";
+            lblHueValue.Text = $"Tông màu: {warmHue}°";
+
+            // 3. Gọi hàm áp dụng chung để hiển thị hiệu ứng
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử để có thể Undo/Redo
+            SaveState();
+        }
+        private Bitmap ApplyFaded(Bitmap originalBitmap)
+        {
+            // Giá trị Offset để làm sáng các điểm tối (nâng điểm đen)
+            // Giá trị này nên nằm trong khoảng từ 0.02f đến 0.08f.
+            float offsetValue = 0.05f;
+
+            // Ma trận Faded
+            ColorMatrix colorMatrix = new ColorMatrix(new float[][]
+            {
+        // R      G      B      A      W
+        new float[] {1, 0, 0, 0, 0},
+        new float[] {0, 1, 0, 0, 0},
+        new float[] {0, 0, 1, 0, 0},
+        new float[] {0, 0, 0, 1, 0},
+        // Hàng Offset: Thêm offsetValue vào R, G, B
+        new float[] {offsetValue, offsetValue, offsetValue, 0, 1}
+            });
+
+            // Tạo ImageAttributes để áp dụng ColorMatrix
+            ImageAttributes attributes = new ImageAttributes();
+            attributes.SetColorMatrix(colorMatrix);
+
+            // Chuẩn bị tạo Bitmap mới và vẽ lại ảnh
+            int width = originalBitmap.Width;
+            int height = originalBitmap.Height;
+            Bitmap newBitmap = new Bitmap(width, height, originalBitmap.PixelFormat);
+
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                g.DrawImage(originalBitmap,
+                            new Rectangle(0, 0, width, height),
+                            0, 0, width, height,
+                            GraphicsUnit.Pixel,
+                            attributes);
+            }
+
+            return newBitmap;
+        }
+
+        private void btnFadedEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Lưu trạng thái hiện tại trước khi áp dụng hiệu ứng
+            SaveState();
+
+            // 2. Tải lại ảnh gốc và áp dụng hiệu ứng Faded
+            // Bắt buộc phải bắt đầu từ ảnh gốc (originalStoredBitmap) để hiệu ứng Faded không bị áp dụng chồng chéo.
+
+            Bitmap baseBitmap = new Bitmap(originalStoredBitmap);
+            Bitmap fadedBitmap = ApplyFaded(baseBitmap);
+            baseBitmap.Dispose();
+
+            // 3. Giải phóng currentImage cũ và cập nhật
+            if (currentImage != null)
+            {
+                currentImage.Dispose();
+            }
+            currentImage = fadedBitmap;
+            pictureBox1.Image = currentImage;
+            pictureBox1.Refresh();
+
+            // 4. Cập nhật originalStoredBitmap để các thanh trượt màu sắc tinh chỉnh trên ảnh đã Faded
+            if (originalStoredBitmap != null)
+            {
+                originalStoredBitmap.Dispose();
+            }
+            originalStoredBitmap = new Bitmap(currentImage);
+
+            // 5. Đặt tất cả các thanh trượt về trạng thái trung tính (trừ độ bão hòa)
+
+            // Giá trị đề xuất cho Faded: Tăng nhẹ bão hòa để ảnh không quá nhạt
+            int fadedSaturation = 110;
+
+            trackBarBrightness.Value = 0;
+            trackBarContrast.Value = 0;
+            trackBarSaturation.Value = fadedSaturation;
+            trackBarTemperature.Value = 0;
+            trackBarHue.Value = 0;
+
+            lblBrightnessValue.Text = $"Độ sáng: 0";
+            lblContrastValue.Text = $"Tương phản: 0";
+            lblSaturationValue.Text = $"Độ bão hòa: {fadedSaturation}%";
+            lblTemperatureValue.Text = $"Nhiệt độ: 0";
+            lblHueValue.Text = $"Tông màu: 0°";
+
+            // LƯU Ý: Không cần gọi ApplyAdjustments() ở đây vì ảnh đã được vẽ lại ở bước 3, 
+            // và chúng ta đã Reset các thanh trượt về giá trị trung tính.
+        }
+
+        private void btnTextureEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng Texture (Tạo phong cách có độ sâu và chi tiết)
+            int textureContrast = 25;    // Tăng tương phản mạnh
+            int textureBrightness = -10; // Giảm sáng nhẹ
+            int textureSaturation = 105; // Hơi tăng bão hòa
+            int textureTemperature = -10; // Hơi lạnh nhẹ
+            int textureHue = 0;          // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarContrast.Value = textureContrast;
+            trackBarBrightness.Value = textureBrightness;
+            trackBarSaturation.Value = textureSaturation;
+            trackBarTemperature.Value = textureTemperature;
+            trackBarHue.Value = textureHue;
+
+            lblContrastValue.Text = $"Tương phản: {textureContrast}";
+            lblBrightnessValue.Text = $"Độ sáng: {textureBrightness}";
+            lblSaturationValue.Text = $"Độ bão hòa: {textureSaturation}%";
+            lblTemperatureValue.Text = $"Nhiệt độ: {textureTemperature}";
+            lblHueValue.Text = $"Tông màu: {textureHue}°";
+
+            // 3. Gọi hàm áp dụng chung để hiển thị hiệu ứng
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử để có thể Undo/Redo
+            SaveState();
+        }
+
+        private void btnWhiteEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng White (Sáng, Sạch)
+            int whiteBrightness = 40;     // Tăng sáng mạnh
+            int whiteContrast = -10;      // Giảm tương phản nhẹ (để tránh cháy đen)
+            int whiteTemperature = 5;    // Hơi ấm nhẹ (làm sạch tông lạnh)
+            int whiteSaturation = 105;    // Hơi tăng bão hòa
+            int whiteHue = -10;             // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = whiteBrightness;
+            trackBarContrast.Value = whiteContrast;
+            trackBarTemperature.Value = whiteTemperature;
+            trackBarSaturation.Value = whiteSaturation;
+            trackBarHue.Value = whiteHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {whiteBrightness}";
+            lblContrastValue.Text = $"Tương phản: {whiteContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {whiteTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {whiteSaturation}%";
+            lblHueValue.Text = $"Tông màu: {whiteHue}°";
+
+            // 3. Gọi hàm áp dụng chung để hiển thị hiệu ứng
+            // (ApplyAdjustments sẽ sử dụng các giá trị TrackBar mới)
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử để có thể Undo/Redo
+            SaveState();
+        }
+
+        private void btnSeaEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng SEA (Tông lạnh, bão hòa xanh cao)
+            // Giá trị giả định: 
+            int seaBrightness = 20;    // Giảm sáng nhẹ cho chiều sâu
+            int seaContrast = -20;       // Tăng tương phản nhẹ
+            int seaTemperature = -20;   // Rất lạnh (Blue/Cyan tones)
+            int seaSaturation = 80;     // Tăng bão hòa màu
+            int seaHue = -15;            // Dịch chuyển về tông Xanh lục/lam
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = seaBrightness;
+            trackBarContrast.Value = seaContrast;
+            trackBarTemperature.Value = seaTemperature;
+            trackBarSaturation.Value = seaSaturation;
+            trackBarHue.Value = seaHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {seaBrightness}";
+            lblContrastValue.Text = $"Tương phản: {seaContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {seaTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {seaSaturation}%";
+            lblHueValue.Text = $"Tông màu: {seaHue}°";
+
+            // 3. Gọi hàm áp dụng chung (Hàm ApplyAdjustments() của bạn)
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử
+            SaveState();
+        }
+
+        private void btnSunlightEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng SUNLIGHT (Tông ấm, sáng, hơi mềm)
+            // Giá trị giả định:
+            int sunBrightness = 30;     // Tăng sáng mạnh (sáng rực rỡ)
+            int sunContrast = -10;      // Giảm tương phản (hiệu ứng "bloom" mềm mại)
+            int sunTemperature = 40;    // Rất ấm (Yellow/Orange tones)
+            int sunSaturation = 95;     // Tăng bão hòa nhẹ
+            int sunHue = 0;             // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = sunBrightness;
+            trackBarContrast.Value = sunContrast;
+            trackBarTemperature.Value = sunTemperature;
+            trackBarSaturation.Value = sunSaturation;
+            trackBarHue.Value = sunHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {sunBrightness}";
+            lblContrastValue.Text = $"Tương phản: {sunContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {sunTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {sunSaturation}%";
+            lblHueValue.Text = $"Tông màu: {sunHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử
+            SaveState();
+        }
+
+        private void btnAutumnEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng AUTUMN (Sắc đỏ/vàng, sâu, bão hòa cao)
+            // Giá trị giả định:
+            int autumnBrightness = -5;  // Giảm sáng nhẹ (màu sâu hơn)
+            int autumnContrast = 20;    // Tăng tương phản mạnh
+            int autumnTemperature = 25; // Hơi ấm
+            int autumnSaturation = 75;  // Rất bão hòa (tạo màu lá đỏ/vàng rực)
+            int autumnHue = 15;         // Dịch chuyển về tông Đỏ/Cam
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = autumnBrightness;
+            trackBarContrast.Value = autumnContrast;
+            trackBarTemperature.Value = autumnTemperature;
+            trackBarSaturation.Value = autumnSaturation;
+            trackBarHue.Value = autumnHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {autumnBrightness}";
+            lblContrastValue.Text = $"Tương phản: {autumnContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {autumnTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {autumnSaturation}%";
+            lblHueValue.Text = $"Tông màu: {autumnHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử
+            SaveState();
+        }
+
+        private void btnParadiseEffect_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng PARADISE (Siêu bão hòa, tươi sáng, lạnh nhẹ)
+            // Giá trị giả định:
+            int paradiseBrightness = 15; // Tăng sáng nhẹ
+            int paradiseContrast = 10;   // Tăng tương phản nhẹ
+            int paradiseTemperature = -10; // Hơi lạnh (tạo màu xanh ngọc/xanh lá tươi)
+            int paradiseSaturation = 115; // Tăng bão hòa RẤT mạnh (rực rỡ)
+            int paradiseHue = 0;         // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = paradiseBrightness;
+            trackBarContrast.Value = paradiseContrast;
+            trackBarTemperature.Value = paradiseTemperature;
+            trackBarSaturation.Value = paradiseSaturation;
+            trackBarHue.Value = paradiseHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {paradiseBrightness}";
+            lblContrastValue.Text = $"Tương phản: {paradiseContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {paradiseTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {paradiseSaturation}%";
+            lblHueValue.Text = $"Tông màu: {paradiseHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới vào lịch sử
+            SaveState();
+        }
+
+        private void btnVivid_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng VIVID (Rực rỡ, bão hòa cao, tương phản mạnh)
+            // Giá trị giả định:
+            int vividBrightness = 10;       // Tăng sáng nhẹ
+            int vividContrast = 35;         // Tăng tương phản mạnh
+            int vividTemperature = 5;       // Giữ nhiệt độ trung tính
+            int vividSaturation = 130;       // Tăng độ bão hòa RẤT mạnh
+            int vividHue = 10;               // Giữ nguyên tông màu
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = vividBrightness;
+            trackBarContrast.Value = vividContrast;
+            trackBarTemperature.Value = vividTemperature;
+            trackBarSaturation.Value = vividSaturation;
+            trackBarHue.Value = vividHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {vividBrightness}";
+            lblContrastValue.Text = $"Tương phản: {vividContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {vividTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {vividSaturation}%";
+            lblHueValue.Text = $"Tông màu: {vividHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới
+            SaveState();
+        }
+
+        private void btnCream_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng CREAM (Ấm, sáng, tương phản thấp, tông da mềm)
+            // Giá trị giả định:
+            int creamBrightness = 25;       // Tăng sáng
+            int creamContrast = -20;        // Giảm tương phản (tạo cảm giác mềm mại/mờ nhẹ)
+            int creamTemperature = 30;      // Rất ấm (tông vàng kem)
+            int creamSaturation = 90;      // Giảm bão hòa nhẹ
+            int creamHue = 5;               // Hơi dịch về tông vàng/đỏ
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = creamBrightness;
+            trackBarContrast.Value = creamContrast;
+            trackBarTemperature.Value = creamTemperature;
+            trackBarSaturation.Value = creamSaturation;
+            trackBarHue.Value = creamHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {creamBrightness}";
+            lblContrastValue.Text = $"Tương phản: {creamContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {creamTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {creamSaturation}%";
+            lblHueValue.Text = $"Tông màu: {creamHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới
+            SaveState();
+        }
+
+        private void btnTasty_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng TASTY (Sáng, tương phản, ấm và bão hòa)
+            // Giá trị giả định:
+            int tastyBrightness = 15;       // Tăng sáng
+            int tastyContrast = 20;         // Tăng tương phản
+            int tastyTemperature = 15;      // Ấm áp
+            int tastySaturation = 110;       // Tăng bão hòa mạnh
+            int tastyHue = 10;              // Dịch về tông cam/đỏ (tăng màu cho thịt, gia vị)
+
+            // 2. C cập nhật các TrackBar và Label
+            trackBarBrightness.Value = tastyBrightness;
+            trackBarContrast.Value = tastyContrast;
+            trackBarTemperature.Value = tastyTemperature;
+            trackBarSaturation.Value = tastySaturation;
+            trackBarHue.Value = tastyHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {tastyBrightness}";
+            lblContrastValue.Text = $"Tương phản: {tastyContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {tastyTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {tastySaturation}%";
+            lblHueValue.Text = $"Tông màu: {tastyHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới
+            SaveState();
+        }
+
+        private void btnPicnic_Click(object sender, EventArgs e)
+        {
+            if (originalStoredBitmap == null) return;
+
+            // 1. Thiết lập các giá trị cho hiệu ứng TASTY (Sáng, tương phản, ấm và bão hòa)
+            // Giá trị giả định:
+            int tastyBrightness = 15;       // Tăng sáng
+            int tastyContrast = 20;         // Tăng tương phản
+            int tastyTemperature = 15;      // Ấm áp
+            int tastySaturation = 115;       // Tăng bão hòa mạnh
+            int tastyHue = 10;              // Dịch về tông cam/đỏ (tăng màu cho thịt, gia vị)
+
+            // 2. Cập nhật các TrackBar và Label
+            trackBarBrightness.Value = tastyBrightness;
+            trackBarContrast.Value = tastyContrast;
+            trackBarTemperature.Value = tastyTemperature;
+            trackBarSaturation.Value = tastySaturation;
+            trackBarHue.Value = tastyHue;
+
+            lblBrightnessValue.Text = $"Độ sáng: {tastyBrightness}";
+            lblContrastValue.Text = $"Tương phản: {tastyContrast}";
+            lblTemperatureValue.Text = $"Nhiệt độ: {tastyTemperature}";
+            lblSaturationValue.Text = $"Độ bão hòa: {tastySaturation}%";
+            lblHueValue.Text = $"Tông màu: {tastyHue}°";
+
+            // 3. Gọi hàm áp dụng chung
+            ApplyAdjustments();
+
+            // 4. Lưu trạng thái mới
+            SaveState();
+        }
+
+        private void cropToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Kiểm tra xem đã có ảnh được tải chưa
+            if (originalLoadedBitmap == null)
+            {
+                MessageBox.Show("Vui lòng tải ảnh lên trước khi sử dụng chức năng Cắt ảnh.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // 1. Tạo một đối tượng của FormCrop
+            FormCrop formCrop = new FormCrop();
+
+            // 2. TẠM THỜI gán ảnh gốc cho FormCrop (Bạn cần tạo thuộc tính Public trong FormCrop)
+            // Giả sử bạn tạo một thuộc tính tên là ImageToCrop trong FormCrop
+            formCrop.ImageToCrop = originalLoadedBitmap;
+
+            // 3. Hiển thị FormCrop dưới dạng Dialog
+            formCrop.ShowDialog();
+
+            /* * SAU KHI FORM CROP ĐƯỢC ĐÓNG:
+             * Kiểm tra xem người dùng có nhấn nút "Áp dụng/Apply" hay không.
+             * Để làm được điều này, bạn cần thiết lập formCrop.DialogResult = DialogResult.OK 
+             * trong FormCrop khi người dùng nhấn Áp dụng.
+            */
+            if (formCrop.DialogResult == DialogResult.OK)
+            {
+                // 4. Lấy ảnh đã cắt (giả sử FormCrop có thuộc tính ResultImage)
+                Bitmap croppedImage = formCrop.ResultImage;
+
+                // 5. Cập nhật ảnh đã cắt vào Form chính (Form1)
+                if (croppedImage != null)
+                {
+                    // Cập nhật PictureBox chính
+                    pictureBox1.Image = croppedImage;
+
+                    // Cập nhật ảnh gốc được lưu trữ để tiếp tục chỉnh sửa
+                    originalLoadedBitmap = new Bitmap(croppedImage);
+                    originalStoredBitmap = new Bitmap(croppedImage);
+
+                    // Lưu trạng thái mới vào lịch sử (nếu bạn có chức năng Undo/Redo)
+                    SaveState();
+                }
+            }
+
+            // formCrop.Dispose(); // Không cần thiết nếu dùng ShowDialog()
+        }
+
+        private void btnDeleteImage_Click(object sender, EventArgs e)
+        {
+            // Kiểm tra xem PictureBox có đang chứa ảnh hay không
+            if (pictureBox1.Image != null)
+            {
+                // 1. Lưu lại tham chiếu ảnh cũ để giải phóng bộ nhớ
+                Image oldImage = pictureBox1.Image;
+
+                // 2. Xóa ảnh khỏi PictureBox bằng cách gán Image = null
+                pictureBox1.Image = null;
+
+                // 3. Giải phóng bộ nhớ của ảnh cũ (Rất quan trọng để tránh lỗi GDI+)
+                oldImage.Dispose();
+
+                // Cần reset lại trạng thái và các biến liên quan đến ảnh nếu có (Ví dụ: tên file ảnh, đường dẫn, v.v.)
+                // Ví dụ:
+                // currentImagePath = string.Empty; 
+
+                MessageBox.Show("Ảnh đã được xóa khỏi PictureBox.", "Thông báo");
+            }
+            else
+            {
+                MessageBox.Show("Không có ảnh để xóa.", "Thông báo");
+            }
+        }
+
+        // Save Project (create or update)
+        private async Task SaveProjectMenu_Click(object sender, EventArgs e)
+        {
+            // Require an image in memory to save
+            if (currentImage == null)
+            {
+                MessageBox.Show("Không có ảnh đang mở để lưu Project.", "Thông báo");
+                return;
+            }
+
+            // Prepare bitmap to save (use a copy if currentImage isn't a Bitmap)
+            Bitmap bitmapToSave = currentImage as Bitmap;
+            bool createdCopy = false;
+            if (bitmapToSave == null)
+            {
+                bitmapToSave = new Bitmap(currentImage);
+                createdCopy = true;
+            }
+
+            try
+            {
+                if (currentProjectDto == null)
+                {
+                    // Create new project
+                    string defaultName = Path.GetFileNameWithoutExtension(currentImagePath ?? "untitled");
+                    string name = PromptForProjectName("Nhập tên Project:", defaultName);
+                    if (name == null) // user cancelled
+                    {
+                        return;
+                    }
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        MessageBox.Show("Tên Project không được để trống.", "Thông báo");
+                        return;
+                    }
+
+                    // Decide directory to save edited image
+                    string targetDir;
+                    if (!string.IsNullOrWhiteSpace(currentImagePath) && File.Exists(currentImagePath))
+                        targetDir = Path.GetDirectoryName(currentImagePath);
+                    else
+                        targetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AppFixPicture");
+
+                    if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+
+                    string ext = ".png";
+                    if (!string.IsNullOrWhiteSpace(currentImagePath))
+                    {
+                        ext = Path.GetExtension(currentImagePath);
+                        if (string.IsNullOrWhiteSpace(ext)) ext = ".png";
+                    }
+
+                    string safeName = MakeFileSystemSafeName(name);
+                    string targetPath = Path.Combine(targetDir, $"{safeName}_saved{ext}");
+                    int idx = 1;
+                    while (File.Exists(targetPath))
+                    {
+                        targetPath = Path.Combine(targetDir, $"{safeName}_saved({idx}){ext}");
+                        idx++;
+                    }
+
+                    // Save bitmap to disk
+                    SaveBitmapToPath(bitmapToSave, targetPath);
+
+                    var dto = new AFP.BLL.DTOs.ProjectDto
+                    {
+                        ProjectName = name,
+                        OriginalFilePath = currentImagePath,
+                        LastSavedPath = targetPath,
+                        DateCreated = DateTime.Now,
+                        DateModified = DateTime.Now
+                    };
+
+                    var created = await _projectService.CreateAsync(dto);
+                    currentProjectDto = created;
+
+                    try
+                    {
+                        await RecordInitialHistoryAsync(created.ProjectID);
+                    }
+                    catch (Exception hx)
+                    {
+                        MessageBox.Show($"Cảnh báo: Không lưu được lịch sử chỉnh sửa: {hx.Message}", "Cảnh báo");
+                    }
+
+                    // Update current image path to saved file
+                    currentImagePath = targetPath;
+
+                    MessageBox.Show("Tạo Project và lưu ảnh đã chỉnh sửa thành công.", "Thông báo");
+                }
+                else
+                {
+                    // Update existing
+                    string targetPath = currentProjectDto.LastSavedPath;
+                    if (string.IsNullOrWhiteSpace(targetPath))
+                    {
+                        string targetDir = !string.IsNullOrWhiteSpace(currentProjectDto.OriginalFilePath) && File.Exists(currentProjectDto.OriginalFilePath)
+                            ? Path.GetDirectoryName(currentProjectDto.OriginalFilePath)
+                            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AppFixPicture");
+
+                        if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+
+                        string baseName = MakeFileSystemSafeName(currentProjectDto.ProjectName ?? "project");
+                        string ext = !string.IsNullOrWhiteSpace(currentImagePath) ? Path.GetExtension(currentImagePath) : ".png";
+                        targetPath = Path.Combine(targetDir, $"{baseName}_saved{ext}");
+                        int idx = 1;
+                        while (File.Exists(targetPath))
+                        {
+                            targetPath = Path.Combine(targetDir, $"{baseName}_saved({idx}){ext}");
+                            idx++;
+                        }
+                    }
+
+                    // Save bitmap to disk (overwrite or create new)
+                    SaveBitmapToPath(bitmapToSave, targetPath);
+
+                    // Update DTO and persist
+                    currentProjectDto.LastSavedPath = targetPath;
+                    currentProjectDto.DateModified = DateTime.Now;
+                    if (string.IsNullOrWhiteSpace(currentProjectDto.OriginalFilePath))
+                        currentProjectDto.OriginalFilePath = currentImagePath;
+
+                    await _projectService.UpdateAsync(currentProjectDto);
+
+                    currentImagePath = targetPath;
+                    MessageBox.Show("Cập nhật Project và lưu ảnh đã chỉnh sửa thành công.", "Thông báo");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi lưu Project: {ex.Message}\n\n{ex}", "Lỗi");
+            }
+            finally
+            {
+                if (createdCopy && bitmapToSave != null)
+                {
+                    bitmapToSave.Dispose();
+                }
+            }
+        }
+
+        // Helper: save bitmap with format chosen by extension
+        private void SaveBitmapToPath(Bitmap bmp, string path)
+        {
+            var ext = Path.GetExtension(path)?.ToLowerInvariant();
+            System.Drawing.Imaging.ImageFormat fmt = System.Drawing.Imaging.ImageFormat.Png;
+            if (ext == ".jpg" || ext == ".jpeg") fmt = System.Drawing.Imaging.ImageFormat.Jpeg;
+            else if (ext == ".bmp") fmt = System.Drawing.Imaging.ImageFormat.Bmp;
+            else if (ext == ".gif") fmt = System.Drawing.Imaging.ImageFormat.Gif;
+            else if (ext == ".png") fmt = System.Drawing.Imaging.ImageFormat.Png;
+
+            // If file exists, allow overwrite
+            bmp.Save(path, fmt);
+        }
+
+        // Helper: make simple filename safe
+        private string MakeFileSystemSafeName(string name)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            var sb = new StringBuilder();
+            foreach (var ch in name)
+            {
+                if (invalid.Contains(ch)) sb.Append('_'); else sb.Append(ch);
+            }
+            return sb.ToString();
+        }
+
+        // Restore missing helpers
+        // Small helper input dialog to prompt for a string (returns null on cancel)
+        private string PromptForProjectName(string prompt, string defaultValue)
+        {
+            using (Form promptForm = new Form())
+            {
+                promptForm.Width = 420;
+                promptForm.Height = 150;
+                promptForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                promptForm.StartPosition = FormStartPosition.CenterParent;
+                promptForm.MinimizeBox = false;
+                promptForm.MaximizeBox = false;
+                promptForm.Text = "Save Project";
+
+                Label textLabel = new Label() { Left = 10, Top = 10, Width = 380, Text = prompt };
+                TextBox inputBox = new TextBox() { Left = 10, Top = 35, Width = 380 };
+                inputBox.Text = defaultValue ?? string.Empty;
+
+                Button confirmation = new Button() { Text = "OK", Left = 220, Width = 80, Top = 65, DialogResult = DialogResult.OK };
+                Button cancel = new Button() { Text = "Cancel", Left = 310, Width = 80, Top = 65, DialogResult = DialogResult.Cancel };
+
+                promptForm.Controls.Add(textLabel);
+                promptForm.Controls.Add(inputBox);
+                promptForm.Controls.Add(confirmation);
+                promptForm.Controls.Add(cancel);
+
+                promptForm.AcceptButton = confirmation;
+                promptForm.CancelButton = cancel;
+
+                var dr = promptForm.ShowDialog(this);
+                if (dr == DialogResult.OK)
+                {
+                    return inputBox.Text.Trim();
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        // Record initial history entry (non-fatal)
+        private async Task RecordInitialHistoryAsync(int projectId)
+        {
+            if (_historyService == null) return;
+            if (projectId <= 0) return;
+
+            var historyDto = new AFP.BLL.DTOs.EditHistoryDto
+            {
+                ProjectID = projectId,
+                StepIndex = 0,
+                OperationType = "LoadImage",
+                OperationData = "{\"Path\":\"" + this.currentImagePath + "\"}",
+                DateApplied = DateTime.Now
+            };
+
+            try
+            {
+                await _historyService.CreateAsync(historyDto);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to record history: " + ex.ToString());
+                // swallow
+            }
+        }
+
+        private void trackBarTemperature_Scroll(object sender, EventArgs e)
+        {
+            // Cập nhật giá trị hiển thị
+            int value = trackBarTemperature.Value;
+            lblTemperatureValue.Text = $"Nhiệt độ màu: {value}";
+
+            // Gọi hàm áp dụng chung
+            ApplyAdjustments();
+        }
+
+        private void trackBarHue_Scroll(object sender, EventArgs e)
+        {
+            // Cập nhật giá trị hiển thị
+            int value = trackBarHue.Value;
+            lblHueValue.Text = $"Tông màu: {value}";
+
+            // Gọi hàm áp dụng chung
+            ApplyAdjustments();
+        }
+
+        // Save menu item (File -> Save) handler
+        private async void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentImage == null)
+            {
+                MessageBox.Show("Không có ảnh để lưu.", "Thông báo");
+                return;
+            }
+
+            // Ask user where to save the current edited image
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "PNG Image|*.png|JPEG Image|*.jpg;*.jpeg|Bitmap Image|*.bmp";
+                sfd.Title = "Save Image";
+
+                // Suggest filename based on project or current path
+                string suggestName = null;
+                if (currentProjectDto != null)
+                    suggestName = MakeFileSystemSafeName(currentProjectDto.ProjectName) + "_saved";
+                else if (!string.IsNullOrWhiteSpace(currentImagePath))
+                    suggestName = Path.GetFileNameWithoutExtension(currentImagePath) + "_saved";
+                else
+                    suggestName = "image_saved";
+
+                sfd.FileName = suggestName + ".png";
+
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+
+                try
+                {
+                    // Ensure we have a Bitmap instance to save
+                    Bitmap bmpToSave = currentImage as Bitmap;
+                    bool createdCopy = false;
+                    if (bmpToSave == null)
+                    {
+                        bmpToSave = new Bitmap(currentImage);
+                        createdCopy = true;
+                    }
+
+                    // Save file according to chosen extension
+                    SaveBitmapToPath(bmpToSave, sfd.FileName);
+
+                    // Update currentImagePath to the saved file
+                    currentImagePath = sfd.FileName;
+
+                    // If project loaded, update LastSavedPath and persist
+                    if (currentProjectDto != null)
+                    {
+                        currentProjectDto.LastSavedPath = currentImagePath;
+                        currentProjectDto.DateModified = DateTime.Now;
+                        try
+                        {
+                            await _projectService.UpdateAsync(currentProjectDto);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Lưu Project thất bại: {ex.Message}", "Lỗi");
+                        }
+                    }
+
+                    MessageBox.Show("Lưu ảnh thành công.", "Thông báo");
+
+                    if (createdCopy && bmpToSave != null)
+                        bmpToSave.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi lưu ảnh: {ex.Message}", "Lỗi");
+                }
+            }
+        }
+    }
+}
